@@ -61,7 +61,6 @@ func execute(c *cli.Context) error {
 	// Instantiate the Daemon
 	d, err := daemon.NewDaemon(conf)
 	if err != nil {
-		log.Err(err).Msg("unable to instantiate the daemon")
 		return err
 	}
 

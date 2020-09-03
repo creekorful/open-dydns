@@ -11,8 +11,11 @@ var DefaultConfig = Config{
 		ListenAddr: "127.0.0.1:8888",
 		SigningKey: "",
 	},
-	DaemonConfig:   DaemonConfig{},
-	DatabaseConfig: DatabaseConfig{},
+	DaemonConfig: DaemonConfig{},
+	DatabaseConfig: DatabaseConfig{
+		Driver: "sqlite",
+		DSN:    "test.db",
+	},
 }
 
 type Config struct {
@@ -21,15 +24,33 @@ type Config struct {
 	DatabaseConfig DatabaseConfig
 }
 
+func (c Config) Valid() bool {
+	return c.ApiConfig.Valid() && c.DaemonConfig.Valid() && c.DatabaseConfig.Valid()
+}
+
 type ApiConfig struct {
 	ListenAddr string
 	SigningKey string
 }
 
+func (ac ApiConfig) Valid() bool {
+	return ac.ListenAddr != "" && ac.SigningKey != ""
+}
+
 type DaemonConfig struct {
 }
 
+func (dc DaemonConfig) Valid() bool {
+	return true
+}
+
 type DatabaseConfig struct {
+	Driver string
+	DSN    string
+}
+
+func (dc DatabaseConfig) Valid() bool {
+	return dc.Driver != "" && dc.DSN != ""
 }
 
 func Load(path string) (Config, error) {
@@ -44,7 +65,7 @@ func Load(path string) (Config, error) {
 		return Config{}, err
 	}
 
-	if !validate(config) {
+	if !config.Valid() {
 		return Config{}, fmt.Errorf("invalid config file `%s`", path)
 	}
 
@@ -58,9 +79,4 @@ func Save(config Config, path string) error {
 	}
 
 	return toml.NewEncoder(file).Encode(&config)
-}
-
-func validate(conf Config) bool {
-	// TODO complete / improve tests
-	return conf.ApiConfig.ListenAddr != "" && conf.ApiConfig.SigningKey != ""
 }

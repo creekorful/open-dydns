@@ -34,7 +34,7 @@ func NewDaemon(c config.Config) (Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Msg("database connection established!")
+	log.Info().Str("Driver", c.DatabaseConfig.Driver).Msg("database connection established!")
 
 	return &daemon{
 		conn: conn,

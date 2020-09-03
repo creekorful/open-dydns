@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"fmt"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -39,10 +40,13 @@ type connection struct {
 	connection *gorm.DB
 }
 
-func OpenConnection(d config.DatabaseConfig) (Connection, error) {
-	// TODO support multiple provider using config
-	// TODO use factory pattern
-	conn, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{
+func OpenConnection(conf config.DatabaseConfig) (Connection, error) {
+	driver, err := getDriver(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := gorm.Open(driver, &gorm.Config{
 		Logger: &nopLogger{},
 	})
 	if err != nil {
@@ -112,4 +116,13 @@ func (c *connection) UpdateAlias(alias Alias, userId uint) (Alias, error) {
 		Value:  alias.Value,
 	})
 	return alias, result.Error
+}
+
+func getDriver(conf config.DatabaseConfig) (gorm.Dialector, error) {
+	switch conf.Driver {
+	case "sqlite":
+		return sqlite.Open(conf.DSN), nil
+	default:
+		return nil, fmt.Errorf("no database driver named `%s` found", conf.Driver)
+	}
 }
