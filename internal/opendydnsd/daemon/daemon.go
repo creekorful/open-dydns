@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"errors"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
 	"github.com/creekorful/open-dydns/internal/proto"
 	"github.com/labstack/echo/v4"
@@ -26,22 +27,9 @@ type daemon struct {
 	conn database.Connection
 }
 
-type Config struct {
-	// API configuration
-	ListenAddr string
-	SigningKey string
-}
-
-func ParseConfig(path string) (Config, error) {
-	return Config{
-		ListenAddr: "127.0.0.1:8888",
-		SigningKey: "TODO",
-	}, nil // TODO
-}
-
-func NewDaemon(c Config) (Daemon, error) {
+func NewDaemon(c config.Config) (Daemon, error) {
 	log.Debug().Msg("connecting to the database.")
-	conn, err := database.OpenConnection()
+	conn, err := database.OpenConnection(c.DatabaseConfig)
 	if err != nil {
 		return nil, err
 	}

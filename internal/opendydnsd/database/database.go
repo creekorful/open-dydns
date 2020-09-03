@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -38,7 +39,7 @@ type connection struct {
 	connection *gorm.DB
 }
 
-func OpenConnection() (Connection, error) {
+func OpenConnection(d config.DatabaseConfig) (Connection, error) {
 	// TODO support multiple provider using config
 	// TODO use factory pattern
 	conn, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{

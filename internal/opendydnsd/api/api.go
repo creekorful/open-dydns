@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
 	"github.com/creekorful/open-dydns/internal/proto"
 	"github.com/labstack/echo/v4"
@@ -14,7 +15,7 @@ type Api struct {
 	signingKey []byte
 }
 
-func NewAPI(d daemon.Daemon, signingKey string) (*Api, error) {
+func NewAPI(d daemon.Daemon, conf config.ApiConfig) (*Api, error) {
 	// Configure echo
 	e := echo.New()
 	e.HideBanner = false
@@ -23,7 +24,7 @@ func NewAPI(d daemon.Daemon, signingKey string) (*Api, error) {
 	// Create the API
 	a := Api{
 		e:          e,
-		signingKey: []byte(signingKey),
+		signingKey: []byte(conf.SigningKey),
 	}
 
 	// Register global middlewares
