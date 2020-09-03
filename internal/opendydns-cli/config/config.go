@@ -5,6 +5,10 @@ import (
 	"github.com/creekorful/open-dydns/internal/common"
 )
 
+var DefaultConfig = Config{
+	APIAddr: "http://127.0.0.1:8888",
+}
+
 type Config struct {
 	APIAddr string
 	Token   string
