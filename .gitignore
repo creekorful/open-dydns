@@ -1,3 +1,4 @@
 .idea
 test.db
-config.toml
+opendydnsd.toml
+opendydnsd-cli.toml

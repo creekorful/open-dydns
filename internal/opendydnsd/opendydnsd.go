@@ -20,7 +20,7 @@ func GetApp() *cli.App {
 			common.GetLogFlag(),
 			&cli.StringFlag{
 				Name:  "config",
-				Value: "config.toml",
+				Value: "opendydnsd.toml",
 			},
 		},
 		Action: execute,
@@ -44,7 +44,7 @@ func execute(c *cli.Context) error {
 		return nil
 	}
 
-	// Parse the configuration file
+	// Load the configuration file
 	conf, err := config.Load(configFile)
 	if err != nil {
 		return err
