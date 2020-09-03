@@ -88,7 +88,15 @@ or an error response if something happened.
 
 Below is a example of the configuration file:
 
-```yaml
+```toml
+[ApiConfig]
+  ListenAddr = "127.0.0.1:8888"
+  SigningKey = "TEST"
+
+[DaemonConfig]
+
+[DatabaseConfig]
+
 ```
 
 ## opendydns-cli
