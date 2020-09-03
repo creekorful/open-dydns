@@ -84,9 +84,9 @@ func (c *connection) FindUser(email string) (User, error) {
 }
 
 func (c *connection) FindUserAliases(userId uint) ([]Alias, error) {
-	var user User
-	result := c.connection.First(&user, userId)
-	return user.Aliases, result.Error
+	var aliases []Alias
+	err := c.connection.Model(&User{Model: gorm.Model{ID: userId}}).Association("Aliases").Find(&aliases)
+	return aliases, err
 }
 
 func (c *connection) FindAlias(name string) (Alias, error) {
@@ -96,10 +96,8 @@ func (c *connection) FindAlias(name string) (Alias, error) {
 }
 
 func (c *connection) CreateAlias(alias Alias, userId uint) (Alias, error) {
-	alias.UserID = userId
-
-	result := c.connection.Create(&alias)
-	return alias, result.Error
+	err := c.connection.Model(&User{Model: gorm.Model{ID: userId}}).Association("Aliases").Append(&alias)
+	return alias, err
 }
 
 func (c *connection) DeleteAlias(name string, userId uint) error {
