@@ -10,20 +10,36 @@ import (
 	"os"
 )
 
-var configFile = "config.toml"
-
 func GetApp() *cli.App {
 	return &cli.App{
 		Name:    "opendydnsd",
+		Usage:   "The OpenDyDNS(Daemon)",
 		Version: "0.1.0",
-		Action:  execute,
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "log-level",
+				Value: "info",
+			},
+			&cli.StringFlag{
+				Name:  "config",
+				Value: "config.toml",
+			},
+		},
+		Action: execute,
 	}
 }
 
 func execute(c *cli.Context) error {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(zerolog.DebugLevel)
+	// Configure log level
+	// TODO move to common code when implementing the CLI
+	lvl, err := zerolog.ParseLevel(c.String("log-level"))
+	if err != nil {
+		return err
+	}
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(lvl)
 
 	// Create configuration file if not exist
+	configFile := c.String("config")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		log.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
 		if err := config.Save(config.DefaultConfig, configFile); err != nil {
@@ -34,14 +50,10 @@ func execute(c *cli.Context) error {
 	}
 
 	// Parse the configuration file
-	// TODO use cli parameter to get config.toml
 	conf, err := config.Load(configFile)
 	if err != nil {
 		return err
 	}
-
-	// Configure the logging
-	// TODO set logging level
 
 	// Display version etc...
 	log.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")

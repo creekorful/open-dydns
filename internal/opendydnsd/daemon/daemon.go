@@ -64,7 +64,7 @@ func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, err
 
 	return proto.UserContext{
 		UserID: user.ID,
-	}, nil // TODO
+	}, nil
 }
 
 func (d *daemon) GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error) {
