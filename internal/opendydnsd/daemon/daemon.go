@@ -7,6 +7,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/proto"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -125,12 +126,22 @@ func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error 
 	return d.conn.DeleteAlias(aliasName, userCtx.UserID)
 }
 
-func (d *daemon) encryptPassword(password string) (string, error) {
-	return password, nil // TODO implement
+func (d *daemon) hashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hash), nil
 }
 
-func (d *daemon) validatePassword(encryptedPassword, plainPassword string) bool {
-	return encryptedPassword == plainPassword // TODO implement
+func (d *daemon) validatePassword(hashedPassword, plainPassword string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 // Alias -> AliasDto

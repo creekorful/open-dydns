@@ -26,7 +26,7 @@ type Alias struct {
 }
 
 type Connection interface {
-	CreateUser(email, encryptedPassword string) (User, error)
+	CreateUser(email, hashedPassword string) (User, error)
 	FindUser(email string) (User, error)
 	FindUserAliases(userId uint) ([]Alias, error)
 	FindAlias(name string) (Alias, error)
@@ -68,10 +68,10 @@ func OpenConnection(d config.DatabaseConfig) (Connection, error) {
 	return c, nil
 }
 
-func (c *connection) CreateUser(email, encryptedPassword string) (User, error) {
+func (c *connection) CreateUser(email, hashedPassword string) (User, error) {
 	user := User{
 		Email:    email,
-		Password: encryptedPassword,
+		Password: hashedPassword,
 	}
 
 	result := c.connection.Create(&user)
