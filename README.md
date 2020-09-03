@@ -26,7 +26,7 @@ Request Body:
 
 ```json
 {
-  "username": "test",
+  "email": "test",
   "password": "test"
 }
 ```
@@ -100,7 +100,7 @@ Each time the CLI is installed on a computer, a new access token must be registe
 ### Commands
 
 ```
-$ opendydns-cli login <username>
+$ opendydns-cli login <email>
 ```
 
 This command will prompt for the user password and then tries to authenticate it and save the auth token
