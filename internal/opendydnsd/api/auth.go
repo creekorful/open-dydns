@@ -18,7 +18,7 @@ func getUserContext(c echo.Context) proto.UserContext {
 	claims := user.Claims.(jwt.MapClaims)
 
 	return proto.UserContext{
-		UserID: uint(claims["userId"].(float64)),
+		UserID: uint(claims["userID"].(float64)),
 	}
 }
 
@@ -27,7 +27,7 @@ func makeToken(userCtx proto.UserContext, secretKey []byte) (proto.TokenDto, err
 
 	// Set claims
 	claims := token.Claims.(jwt.MapClaims)
-	claims["userId"] = userCtx.UserID
+	claims["userID"] = userCtx.UserID
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(secretKey)

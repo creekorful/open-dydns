@@ -1,10 +1,10 @@
 package opendydnsd
 
 import (
+	"github.com/creekorful/open-dydns/internal/common"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/api"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 	"os"
@@ -14,12 +14,10 @@ func GetApp() *cli.App {
 	return &cli.App{
 		Name:    "opendydnsd",
 		Usage:   "The OpenDyDNS(Daemon)",
+		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
 		Version: "0.1.0",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "log-level",
-				Value: "info",
-			},
+			common.GetLogFlag(),
 			&cli.StringFlag{
 				Name:  "config",
 				Value: "config.toml",
@@ -31,12 +29,9 @@ func GetApp() *cli.App {
 
 func execute(c *cli.Context) error {
 	// Configure log level
-	// TODO move to common code when implementing the CLI
-	lvl, err := zerolog.ParseLevel(c.String("log-level"))
-	if err != nil {
+	if err := common.ConfigureLogger(c); err != nil {
 		return err
 	}
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(lvl)
 
 	// Create configuration file if not exist
 	configFile := c.String("config")

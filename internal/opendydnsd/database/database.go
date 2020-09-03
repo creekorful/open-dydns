@@ -29,11 +29,11 @@ type Alias struct {
 type Connection interface {
 	CreateUser(email, hashedPassword string) (User, error)
 	FindUser(email string) (User, error)
-	FindUserAliases(userId uint) ([]Alias, error)
+	FindUserAliases(userID uint) ([]Alias, error)
 	FindAlias(name string) (Alias, error)
-	CreateAlias(alias Alias, userId uint) (Alias, error)
-	DeleteAlias(name string, userId uint) error
-	UpdateAlias(alias Alias, userId uint) (Alias, error)
+	CreateAlias(alias Alias, userID uint) (Alias, error)
+	DeleteAlias(name string, userID uint) error
+	UpdateAlias(alias Alias, userID uint) (Alias, error)
 }
 
 type connection struct {
@@ -88,9 +88,9 @@ func (c *connection) FindUser(email string) (User, error) {
 	return user, result.Error
 }
 
-func (c *connection) FindUserAliases(userId uint) ([]Alias, error) {
+func (c *connection) FindUserAliases(userID uint) ([]Alias, error) {
 	var aliases []Alias
-	err := c.connection.Model(&User{Model: gorm.Model{ID: userId}}).Association("Aliases").Find(&aliases)
+	err := c.connection.Model(&User{Model: gorm.Model{ID: userID}}).Association("Aliases").Find(&aliases)
 	return aliases, err
 }
 
@@ -100,18 +100,18 @@ func (c *connection) FindAlias(name string) (Alias, error) {
 	return alias, result.Error
 }
 
-func (c *connection) CreateAlias(alias Alias, userId uint) (Alias, error) {
-	err := c.connection.Model(&User{Model: gorm.Model{ID: userId}}).Association("Aliases").Append(&alias)
+func (c *connection) CreateAlias(alias Alias, userID uint) (Alias, error) {
+	err := c.connection.Model(&User{Model: gorm.Model{ID: userID}}).Association("Aliases").Append(&alias)
 	return alias, err
 }
 
-func (c *connection) DeleteAlias(name string, userId uint) error {
-	result := c.connection.Where("domain = ?", name).Delete(Alias{}) // TODO restrict userId
+func (c *connection) DeleteAlias(name string, userID uint) error {
+	result := c.connection.Where("domain = ?", name).Delete(Alias{}) // TODO restrict userID
 	return result.Error
 }
 
-func (c *connection) UpdateAlias(alias Alias, userId uint) (Alias, error) {
-	result := c.connection.Model(&alias).Updates(Alias{ // TODO restrict userId
+func (c *connection) UpdateAlias(alias Alias, userID uint) (Alias, error) {
+	result := c.connection.Model(&alias).Updates(Alias{ // TODO restrict userID
 		Domain: alias.Domain,
 		Value:  alias.Value,
 	})

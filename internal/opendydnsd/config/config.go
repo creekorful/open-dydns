@@ -2,12 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/pelletier/go-toml"
-	"os"
+	"github.com/creekorful/open-dydns/internal/common"
 )
 
 var DefaultConfig = Config{
-	ApiConfig: ApiConfig{
+	ApiConfig: APIConfig{
 		ListenAddr: "127.0.0.1:8888",
 		SigningKey: "",
 	},
@@ -19,7 +18,7 @@ var DefaultConfig = Config{
 }
 
 type Config struct {
-	ApiConfig      ApiConfig
+	ApiConfig      APIConfig
 	DaemonConfig   DaemonConfig
 	DatabaseConfig DatabaseConfig
 }
@@ -28,12 +27,12 @@ func (c Config) Valid() bool {
 	return c.ApiConfig.Valid() && c.DaemonConfig.Valid() && c.DatabaseConfig.Valid()
 }
 
-type ApiConfig struct {
+type APIConfig struct {
 	ListenAddr string
 	SigningKey string
 }
 
-func (ac ApiConfig) Valid() bool {
+func (ac APIConfig) Valid() bool {
 	return ac.ListenAddr != "" && ac.SigningKey != ""
 }
 
@@ -54,14 +53,8 @@ func (dc DatabaseConfig) Valid() bool {
 }
 
 func Load(path string) (Config, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return Config{}, err
-	}
-
 	var config Config
-	err = toml.NewDecoder(file).Decode(&config)
-	if err != nil {
+	if err := common.LoadToml(path, &config); err != nil {
 		return Config{}, err
 	}
 
@@ -73,10 +66,5 @@ func Load(path string) (Config, error) {
 }
 
 func Save(config Config, path string) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0640)
-	if err != nil {
-		return err
-	}
-
-	return toml.NewEncoder(file).Encode(&config)
+	return common.SaveToml(path, &config)
 }

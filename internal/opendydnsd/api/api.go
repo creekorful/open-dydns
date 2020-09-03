@@ -10,19 +10,19 @@ import (
 	"net/http"
 )
 
-type Api struct {
+type API struct {
 	e          *echo.Echo
 	signingKey []byte
 }
 
-func NewAPI(d daemon.Daemon, conf config.ApiConfig) (*Api, error) {
+func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	// Configure echo
 	e := echo.New()
 	e.HideBanner = false
 	e.Logger.SetOutput(ioutil.Discard)
 
 	// Create the API
-	a := Api{
+	a := API{
 		e:          e,
 		signingKey: []byte(conf.SigningKey),
 	}
@@ -42,7 +42,7 @@ func NewAPI(d daemon.Daemon, conf config.ApiConfig) (*Api, error) {
 	return &a, nil
 }
 
-func (a *Api) Authenticate(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) Authenticate(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var cred proto.CredentialsDto
 		if err := c.Bind(&cred); err != nil {
@@ -64,7 +64,7 @@ func (a *Api) Authenticate(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *Api) GetAliases(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) GetAliases(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -77,7 +77,7 @@ func (a *Api) GetAliases(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *Api) RegisterAlias(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) RegisterAlias(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -95,7 +95,7 @@ func (a *Api) RegisterAlias(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *Api) DeleteAlias(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) DeleteAlias(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -109,10 +109,10 @@ func (a *Api) DeleteAlias(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *Api) Start(address string) error {
+func (a *API) Start(address string) error {
 	return a.e.Start(address)
 }
 
-func (a *Api) Shutdown(ctx context.Context) error {
+func (a *API) Shutdown(ctx context.Context) error {
 	return a.e.Shutdown(ctx)
 }

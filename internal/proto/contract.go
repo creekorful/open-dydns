@@ -15,5 +15,5 @@ type TokenDto struct {
 }
 
 type UserContext struct {
-	UserID uint `json:"userId"`
+	UserID uint `json:"UserID"`
 }
