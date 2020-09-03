@@ -111,13 +111,13 @@ $ opendydns-cli ls
 ```
 
 This command will list the user current DyDNS aliases with linked current IP.
-This will also enable the alias for given computer and synchronize the IP.
 
 ```
 $ opendydns-cli add <alias>
 ```
 
 This command will register given alias if possible and associated with current computer.
+This will also enable the alias for given computer and synchronize the IP.
 
 ```
 $ opendydns-cli rm <alias>
@@ -126,17 +126,11 @@ $ opendydns-cli rm <alias>
 This command will delete given alias (marking it available for others).
 
 ```
-$ opendydns-cli enable <alias>
+$ opendydns-cli set-synchronize <alias> <true/false>
 ```
 
-Enable given alias on this computer. (I.e the computer will synchronize it using its IP address)
-By default all aliases are disabled, to prevent any service disruption when adding a new computer.
-
-```
-$ opendydns-cli disable <alias>
-```
-
-Disable given alias for this computer. This will stop IP synchronization.
+Enable IP synchronization for this alias.
+Please note that by default synchronization is disable, to prevent any service disruption when adding a new computer.
 
 ```
 $ opendydns-cli set-ip <alias> <ip>

@@ -37,7 +37,7 @@ func NewAPI(d daemon.Daemon, conf config.ApiConfig) (*Api, error) {
 	e.POST("/sessions", a.Authenticate(d))
 	e.GET("/aliases", a.GetAliases(d), authMiddleware)
 	e.POST("/aliases", a.RegisterAlias(d), authMiddleware)
-	e.DELETE("/aliases/{name}", a.DeleteAlias(d), authMiddleware)
+	e.DELETE("/aliases/:name", a.DeleteAlias(d), authMiddleware)
 
 	return &a, nil
 }
