@@ -2,7 +2,7 @@ package client
 
 import (
 	"fmt"
-	"github.com/creekorful/open-dydns/internal/proto"
+	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/go-resty/resty/v2"
 )
 

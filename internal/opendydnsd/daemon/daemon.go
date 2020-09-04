@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
-	"github.com/creekorful/open-dydns/internal/proto"
+	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"

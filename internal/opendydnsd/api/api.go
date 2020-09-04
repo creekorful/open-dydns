@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
-	"github.com/creekorful/open-dydns/internal/proto"
+	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"

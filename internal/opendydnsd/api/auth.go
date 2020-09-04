@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/creekorful/open-dydns/internal/proto"
+	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

@@ -3,7 +3,7 @@ package daemon
 import (
 	"errors"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
-	"github.com/creekorful/open-dydns/internal/proto"
+	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
