@@ -14,6 +14,13 @@ var DefaultConfig = Config{
 type Config struct {
 	APIAddr string
 	Token   string
+	Aliases []AliasConfig
+}
+
+// AliasConfig represent the aliases part of the configuration file
+type AliasConfig struct {
+	Name        string
+	Synchronize bool
 }
 
 // Valid determinate if current configuration is valid one

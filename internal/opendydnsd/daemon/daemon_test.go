@@ -27,11 +27,12 @@ func TestValidatePassword(t *testing.T) {
 
 func TestNewAliasDto(t *testing.T) {
 	alias := newAliasDto(database.Alias{
-		Domain: "domain",
+		Domain: "bar.baz",
+		Host:   "foo",
 		Value:  "value",
 	})
 
-	if alias.Domain != "domain" {
+	if alias.Domain != "foo.bar.baz" {
 		t.FailNow()
 	}
 	if alias.Value != "value" {
@@ -41,15 +42,34 @@ func TestNewAliasDto(t *testing.T) {
 
 func TestNewAlias(t *testing.T) {
 	alias := newAlias(proto.AliasDto{
-		Domain: "domain",
+		Domain: "foo.bar.baz",
 		Value:  "value",
 	})
 
-	if alias.Domain != "domain" {
+	if alias.Domain != "bar.baz" {
+		t.FailNow()
+	}
+	if alias.Host != "foo" {
 		t.FailNow()
 	}
 	if alias.Value != "value" {
 		t.FailNow()
+	}
+}
+
+func TestIsAliasValid(t *testing.T) {
+	if isAliasValid(proto.AliasDto{
+		Domain: "foo",
+		Value:  "127.0.0.1",
+	}) {
+		t.Error("isAliasValid() should have return false")
+	}
+
+	if !isAliasValid(proto.AliasDto{
+		Domain: "foo.bar.baz",
+		Value:  "127.0.0.1",
+	}) {
+		t.Error("isAliasValid() should have return true")
 	}
 }
 
@@ -151,7 +171,34 @@ func TestDaemon_Authenticate(t *testing.T) {
 }
 
 func TestDaemon_GetAliases(t *testing.T) {
-	// TODO
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
+	mockObj := database.NewMockConnection(mockCtrl)
+
+	d := daemon{
+		logger: &logger,
+		conn:   mockObj,
+	}
+
+	mockObj.EXPECT().
+		FindUserAliases(uint(1)).
+		Return([]database.Alias{{Domain: "bar.baz", Host: "foo", Value: "8.8.8.8"}}, nil)
+
+	aliases, err := d.GetAliases(proto.UserContext{UserID: 1})
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(aliases) != 1 {
+		t.Error("wrong number of aliases")
+	}
+
+	alias := aliases[0]
+	if alias.Domain != "foo.bar.baz" || alias.Value != "8.8.8.8" {
+		t.Error("Wrong alias returned")
+	}
 }
 
 func TestDaemon_RegisterAlias_InvalidRequest(t *testing.T) {
@@ -170,6 +217,11 @@ func TestDaemon_RegisterAlias_InvalidRequest(t *testing.T) {
 	if !errors.As(err, &ErrInvalidParameters) {
 		t.Error("RegisterAlias() should have returned ErrInvalidParameters")
 	}
+
+	_, err = d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "test", Value: "8.8.8.8"})
+	if !errors.As(err, &ErrInvalidParameters) {
+		t.Error("RegisterAlias() should have returned ErrInvalidParameters")
+	}
 }
 
 func TestDaemon_RegisterAlias_AliasTaken(t *testing.T) {
@@ -184,13 +236,14 @@ func TestDaemon_RegisterAlias_AliasTaken(t *testing.T) {
 		conn:   mockObj,
 	}
 
-	mockObj.EXPECT().FindAlias("creekorful.de").Return(database.Alias{
+	mockObj.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
 		Domain: "creekorful.de",
+		Host:   "www",
 		UserID: 12,
 	}, nil)
 
 	_, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{
-		Domain: "creekorful.de", Value: "127.0.0.1",
+		Domain: "www.creekorful.de", Value: "127.0.0.1",
 	})
 
 	if !errors.As(err, &ErrAliasTaken) {
@@ -210,13 +263,14 @@ func TestDaemon_RegisterAlias_AliasAlreadyExist(t *testing.T) {
 		conn:   mockObj,
 	}
 
-	mockObj.EXPECT().FindAlias("creekorful.de").Return(database.Alias{
+	mockObj.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
 		Domain: "creekorful.de",
+		Host:   "www",
 		UserID: 1,
 	}, nil)
 
 	_, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{
-		Domain: "creekorful.de", Value: "127.0.0.1",
+		Domain: "www.creekorful.de", Value: "127.0.0.1",
 	})
 
 	if !errors.As(err, &ErrAliasAlreadyExist) {
@@ -237,27 +291,46 @@ func TestDaemon_RegisterAlias(t *testing.T) {
 	}
 
 	mockObj.EXPECT().
-		FindAlias("creekorful.de").
+		FindAlias("www", "creekorful.de").
 		Return(database.Alias{}, gorm.ErrRecordNotFound)
 	mockObj.EXPECT().
-		CreateAlias(database.Alias{Domain: "creekorful.de", Value: "127.0.0.1"}, uint(1)).
+		CreateAlias(database.Alias{Domain: "creekorful.de", Host: "www", Value: "127.0.0.1"}, uint(1)).
 		Return(database.Alias{
 			Model:  gorm.Model{ID: 12},
 			Domain: "creekorful.de",
+			Host:   "www",
 			Value:  "127.0.0.1",
 			UserID: 1,
 		}, nil)
 
 	r, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{
-		Domain: "creekorful.de", Value: "127.0.0.1",
+		Domain: "www.creekorful.de", Value: "127.0.0.1",
 	})
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	if r.Domain != "creekorful.de" || r.Value != "127.0.0.1" {
+	if r.Domain != "www.creekorful.de" || r.Value != "127.0.0.1" {
 		t.Error("Wrong alias created")
+	}
+}
+
+func TestDaemon_UpdateAlias_InvalidAlias(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
+	mockObj := database.NewMockConnection(mockCtrl)
+
+	d := daemon{
+		logger: &logger,
+		conn:   mockObj,
+	}
+
+	_, err := d.UpdateAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "bar.baz", Value: "127.0.0.1"})
+	if err != ErrInvalidParameters {
+		t.Error("UpdateAlias() should have returned ErrInvalidParameters")
 	}
 }
 
@@ -274,7 +347,7 @@ func TestDaemon_UpdateAlias_AliasDoesNotExist(t *testing.T) {
 	}
 
 	mockObj.EXPECT().
-		FindAlias("foo.bar.baz").
+		FindAlias("foo", "bar.baz").
 		Return(database.Alias{}, gorm.ErrRecordNotFound)
 
 	_, err := d.UpdateAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "foo.bar.baz", Value: "127.0.0.1"})
@@ -296,7 +369,7 @@ func TestDaemon_UpdateAlias_AliasNotOwned(t *testing.T) {
 	}
 
 	mockObj.EXPECT().
-		FindAlias("foo.bar.baz").
+		FindAlias("foo", "bar.baz").
 		Return(database.Alias{
 			UserID: 12,
 		}, nil)
@@ -320,21 +393,24 @@ func TestDaemon_UpdateAlias(t *testing.T) {
 	}
 
 	mockObj.EXPECT().
-		FindAlias("foo.bar.baz").
+		FindAlias("foo", "bar.baz").
 		Return(database.Alias{
 			Model:  gorm.Model{ID: 42},
-			Domain: "foo.bar.baz",
+			Domain: "bar.baz",
+			Host:   "foo",
 			Value:  "127.0.0.1",
 			UserID: 1,
 		}, nil)
 	mockObj.EXPECT().UpdateAlias(database.Alias{
 		Model:  gorm.Model{ID: 42},
-		Domain: "foo.bar.baz",
+		Domain: "bar.baz",
+		Host:   "foo",
 		Value:  "8.8.8.8",
-		UserID: 1,
+		UserID: uint(1),
 	}).Return(database.Alias{
 		Model:  gorm.Model{ID: 42},
-		Domain: "foo.bar.baz",
+		Domain: "bar.baz",
+		Host:   "foo",
 		Value:  "8.8.8.8",
 		UserID: 1,
 	}, nil)
@@ -361,9 +437,9 @@ func TestDaemon_DeleteAlias(t *testing.T) {
 		conn:   mockObj,
 	}
 
-	mockObj.EXPECT().DeleteAlias("creekorful.be", uint(1)).Return(nil)
+	mockObj.EXPECT().DeleteAlias("www", "creekorful.be", uint(1)).Return(nil)
 
-	if err := d.DeleteAlias(proto.UserContext{UserID: 1}, "creekorful.be"); err != nil {
+	if err := d.DeleteAlias(proto.UserContext{UserID: 1}, "www.creekorful.be"); err != nil {
 		t.Error(err)
 	}
 }

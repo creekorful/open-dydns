@@ -2,6 +2,7 @@ package daemon
 
 import (
 	"errors"
+	"fmt"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
 	"github.com/creekorful/open-dydns/pkg/proto"
@@ -9,6 +10,7 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"strings"
 )
 
 // ErrUserNotFound is returned when the wanted user cannot be found
@@ -114,12 +116,13 @@ func (d *daemon) GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
 }
 
 func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error) {
-	if alias.Domain == "" || alias.Value == "" {
+	if !isAliasValid(alias) {
 		d.logger.Warn().Msg("invalid register alias request: bad request.")
 		return proto.AliasDto{}, ErrInvalidParameters
 	}
 
-	a, err := d.conn.FindAlias(alias.Domain)
+	a := newAlias(alias)
+	a, err := d.conn.FindAlias(a.Host, a.Domain)
 
 	// technical error
 	if err != nil && !errors.As(err, &gorm.ErrRecordNotFound) {
@@ -151,13 +154,19 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 }
 
 func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error) {
-	al, err := d.findUserAlias(alias.Domain, userCtx.UserID)
+	if !isAliasValid(alias) {
+		d.logger.Warn().Msg("invalid update alias request: bad request.")
+		return proto.AliasDto{}, ErrInvalidParameters
+	}
+
+	al, err := d.findUserAlias(alias, userCtx.UserID)
 	if err != nil {
 		return proto.AliasDto{}, err
 	}
 
 	// Update the alias
-	al.Value = alias.Value
+	updateAlias(&al, alias)
+
 	al, err = d.conn.UpdateAlias(al)
 	if err != nil {
 		d.logger.Err(err).Msg("error while updating alias.")
@@ -170,13 +179,14 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 }
 
 func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error {
-	if err := d.conn.DeleteAlias(aliasName, userCtx.UserID); err != nil {
-		d.logger.Warn().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
+	a := newAlias(proto.AliasDto{Domain: aliasName})
+	if err := d.conn.DeleteAlias(a.Host, a.Domain, userCtx.UserID); err != nil {
+		d.logger.Warn().Str("Domain", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
 		return err
 	}
 	// TODO trigger linked code
 
-	d.logger.Debug().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
+	d.logger.Debug().Str("Domain", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
 
 	return nil
 }
@@ -203,8 +213,9 @@ func (d *daemon) validatePassword(hashedPassword, plainPassword string) bool {
 	return true
 }
 
-func (d *daemon) findUserAlias(name string, userID uint) (database.Alias, error) {
-	al, err := d.conn.FindAlias(name)
+func (d *daemon) findUserAlias(alias proto.AliasDto, userID uint) (database.Alias, error) {
+	a := newAlias(alias)
+	al, err := d.conn.FindAlias(a.Host, a.Domain)
 	if err != nil {
 		if errors.As(err, &gorm.ErrRecordNotFound) {
 			return database.Alias{}, ErrAliasNotFound
@@ -223,15 +234,30 @@ func (d *daemon) findUserAlias(name string, userID uint) (database.Alias, error)
 // Alias -> AliasDto
 func newAliasDto(alias database.Alias) proto.AliasDto {
 	return proto.AliasDto{
-		Domain: alias.Domain,
+		Domain: fmt.Sprintf("%s.%s", alias.Host, alias.Domain),
 		Value:  alias.Value,
 	}
 }
 
 // AliasDto -> Alias
 func newAlias(alias proto.AliasDto) database.Alias {
+	parts := strings.SplitAfterN(alias.Domain, ".", 2)
 	return database.Alias{
-		Domain: alias.Domain,
+		Host:   strings.Replace(parts[0], ".", "", 1),
+		Domain: parts[1],
 		Value:  alias.Value,
 	}
+}
+
+// Update an existing alias using given DTO
+func updateAlias(alias *database.Alias, dto proto.AliasDto) {
+	a := newAlias(dto)
+
+	alias.Host = a.Host
+	alias.Value = a.Value
+}
+
+func isAliasValid(alias proto.AliasDto) bool {
+	// TODO make sure value is valid IPv4 / IpV6
+	return alias.Domain != "" && strings.Count(alias.Domain, ".") >= 2 && alias.Value != ""
 }

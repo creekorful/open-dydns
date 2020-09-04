@@ -83,7 +83,7 @@ Each time the CLI is installed on a computer, a new access token must be registe
 $ opendydns-cli login <email>
 ```
 
-This command will prompt for the user password and then tries to authenticate it and save the auth token
+This command will prompt for the user password and then tries to authenticate it and save the JWT token
 on the system.
 
 ```
@@ -119,7 +119,7 @@ $ opendydns-cli set-ip <alias> <ip>
 Override the IP value for given alias. This works with both IPv4 and Ipv6.
 
 ```
-$ opendydns-cli synchronize
+$ opendydns-cli synch
 ```
 
 This command will synchronize the current IP with linked / active aliases.

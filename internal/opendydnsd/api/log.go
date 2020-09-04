@@ -14,7 +14,7 @@ func newZeroLogMiddleware(logger *zerolog.Logger) echo.MiddlewareFunc {
 
 			logger.Debug().
 				Str("RemoteAddr", c.RealIP()).
-				Int("Status", c.Response().Status).
+				Int("Synchronize", c.Response().Status).
 				Int64("Length", c.Response().Size).
 				Msgf("%s %s", c.Request().Method, c.Path())
 			return nil

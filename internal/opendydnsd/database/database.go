@@ -23,7 +23,7 @@ type User struct {
 type Alias struct {
 	gorm.Model
 
-	// TODO split domain & host
+	Host   string
 	Domain string
 	Value  string
 	UserID uint // FK
@@ -35,9 +35,9 @@ type Connection interface {
 	CreateUser(email, hashedPassword string) (User, error)
 	FindUser(email string) (User, error)
 	FindUserAliases(userID uint) ([]Alias, error)
-	FindAlias(name string) (Alias, error)
+	FindAlias(host, domain string) (Alias, error)
 	CreateAlias(alias Alias, userID uint) (Alias, error)
-	DeleteAlias(name string, userID uint) error
+	DeleteAlias(host, domain string, userID uint) error
 	UpdateAlias(alias Alias) (Alias, error)
 }
 
@@ -91,9 +91,9 @@ func (c *connection) FindUserAliases(userID uint) ([]Alias, error) {
 	return aliases, err
 }
 
-func (c *connection) FindAlias(name string) (Alias, error) {
+func (c *connection) FindAlias(host, domain string) (Alias, error) {
 	var alias Alias
-	result := c.connection.Where("domain = ?", name).First(&alias)
+	result := c.connection.Where("host = ? AND domain = ?", host, domain).First(&alias)
 	return alias, result.Error
 }
 
@@ -102,8 +102,8 @@ func (c *connection) CreateAlias(alias Alias, userID uint) (Alias, error) {
 	return alias, err
 }
 
-func (c *connection) DeleteAlias(name string, userID uint) error {
-	result := c.connection.Where("domain = ? AND user_id = ?", name, userID).Delete(Alias{})
+func (c *connection) DeleteAlias(host, domain string, userID uint) error {
+	result := c.connection.Where("host = ? AND domain = ? AND user_id = ?", host, domain, userID).Delete(Alias{})
 	return result.Error
 }
 

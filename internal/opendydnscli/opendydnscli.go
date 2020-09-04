@@ -11,6 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
+	"strconv"
 )
 
 // OpenDYDNSCLI represent the opendydns-cli running context
@@ -70,6 +71,18 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 				Usage:     "Override the IP value for given alias",
 				Action:    odc.setIP,
 			},
+			{
+				Name:      "set-synchronize",
+				ArgsUsage: "<ALIAS> <STATUS>",
+				Usage:     "Enable synchronization for given alias",
+				Action:    odc.setSynchronize,
+			},
+			{
+				Name:    "synchronize",
+				Aliases: []string{"sync"},
+				Usage:   "Synchronize enabled aliases with current IP",
+				Action:  odc.synchronize,
+			},
 		},
 	}
 }
@@ -88,6 +101,7 @@ func (odc *OpenDYDNSCLI) before(c *cli.Context) error {
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
 		odc.logger.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
 		if err := config.Save(config.DefaultConfig, configFile); err != nil {
+			odc.logger.Err(err).Msg("error while saving config file.")
 			return err
 		}
 
@@ -97,6 +111,7 @@ func (odc *OpenDYDNSCLI) before(c *cli.Context) error {
 	// Load the configuration file
 	conf, err := config.Load(configFile)
 	if err != nil {
+		odc.logger.Err(err).Msg("error while loading config file.")
 		return err
 	}
 
@@ -109,12 +124,16 @@ func (odc *OpenDYDNSCLI) before(c *cli.Context) error {
 
 func (odc *OpenDYDNSCLI) login(c *cli.Context) error {
 	if !c.Args().Present() {
-		return fmt.Errorf("missing EMAIL")
+		err := fmt.Errorf("missing EMAIL")
+		odc.logger.Err(err).Msg("missing EMAIL.")
+		return err
 	}
 
 	// check if not already logged in
 	if odc.conf.Token != "" {
-		return fmt.Errorf("already logged in")
+		err := fmt.Errorf("already logged in")
+		odc.logger.Err(err).Msg("already logged in.")
+		return err
 	}
 
 	// TODO ask for api address too? (and therefore remove Valid())
@@ -132,12 +151,14 @@ func (odc *OpenDYDNSCLI) login(c *cli.Context) error {
 	})
 
 	if err != nil {
+		odc.logger.Err(err).Msg("error while authenticating.")
 		return err
 	}
 
 	// Save token in config file
 	odc.conf.Token = token.Token
 	if err := odc.saveConfig(odc.conf); err != nil {
+		odc.logger.Err(err).Msg("error while saving config.")
 		return err
 	}
 
@@ -160,13 +181,19 @@ func (odc *OpenDYDNSCLI) ls(_ *cli.Context) error {
 	}
 
 	if len(aliases) == 0 {
-		fmt.Println("no aliases found")
+		odc.logger.Info().Msg("no aliases found.")
 		return nil
 	}
 
-	// TODO use proper table
 	for _, alias := range aliases {
-		fmt.Printf("%s -> %s\n", alias.Domain, alias.Value)
+		status := false
+		for _, confAlias := range odc.conf.Aliases {
+			if confAlias.Name == alias.Domain {
+				status = confAlias.Synchronize
+			}
+		}
+
+		odc.logger.Info().Str("Domain", alias.Domain).Str("Value", alias.Value).Bool("Synchronize", status).Msg("")
 	}
 
 	return nil
@@ -183,11 +210,13 @@ func (odc *OpenDYDNSCLI) add(c *cli.Context) error {
 
 	token, err := odc.getToken()
 	if err != nil {
+		odc.logger.Err(err).Msg("error while getting JWT token.")
 		return err
 	}
 
 	ip, err := odc.getRemoteIP()
 	if err != nil {
+		odc.logger.Err(err).Msg("error while getting remote IP.")
 		return err
 	}
 
@@ -197,16 +226,19 @@ func (odc *OpenDYDNSCLI) add(c *cli.Context) error {
 	})
 
 	if err != nil {
+		odc.logger.Err(err).Str("Domain", name).Msg("error while registering alias.")
 		return err
 	}
 
-	odc.logger.Info().Str("Alias", alias.Domain).Msg("successfully created alias.")
+	odc.logger.Info().Str("Domain", alias.Domain).Msg("successfully created alias.")
 	return nil
 }
 
 func (odc *OpenDYDNSCLI) rm(c *cli.Context) error {
 	if !c.Args().Present() {
-		return fmt.Errorf("missing ALIAS")
+		err := fmt.Errorf("missing ALIAS")
+		odc.logger.Err(err).Msg("missing ALIAS.")
+		return err
 	}
 
 	name := c.Args().First()
@@ -215,20 +247,24 @@ func (odc *OpenDYDNSCLI) rm(c *cli.Context) error {
 
 	token, err := odc.getToken()
 	if err != nil {
+		odc.logger.Err(err).Msg("error while getting JWT token.")
 		return err
 	}
 
 	if err := apiClient.DeleteAlias(token, name); err != nil {
+		odc.logger.Err(err).Str("Domain", name).Msg("error while deleting alias.")
 		return err
 	}
 
-	odc.logger.Info().Str("Alias", name).Msg("successfully deleted alias.")
+	odc.logger.Info().Str("Domain", name).Msg("successfully deleted alias.")
 	return nil
 }
 
 func (odc *OpenDYDNSCLI) setIP(c *cli.Context) error {
 	if c.Args().Len() != 2 {
-		return fmt.Errorf("missing ALIAS IP")
+		err := fmt.Errorf("missing ALIAS IP")
+		odc.logger.Err(err).Msg("missing ALIAS IP.")
+		return err
 	}
 
 	alias := c.Args().First()
@@ -238,6 +274,7 @@ func (odc *OpenDYDNSCLI) setIP(c *cli.Context) error {
 
 	token, err := odc.getToken()
 	if err != nil {
+		odc.logger.Err(err).Msg("error while getting JWT token.")
 		return err
 	}
 
@@ -247,10 +284,87 @@ func (odc *OpenDYDNSCLI) setIP(c *cli.Context) error {
 	})
 
 	if err != nil {
+		odc.logger.Err(err).Str("Domain", alias).Str("Value", ip).Msg("error while updating alias.")
 		return err
 	}
 
-	odc.logger.Info().Str("Alias", al.Value).Str("Value", al.Value).Msg("successfully deleted alias.")
+	odc.logger.Info().Str("Domain", al.Domain).Str("Value", al.Value).Msg("successfully updated alias.")
+	return nil
+}
+
+func (odc *OpenDYDNSCLI) setSynchronize(c *cli.Context) error {
+	if c.Args().Len() != 2 {
+		err := fmt.Errorf("missing ALIAS STATUS")
+		odc.logger.Err(err).Msg("missing ALIAS STATUS.")
+		return err
+	}
+
+	status, err := strconv.ParseBool(c.Args().Get(1))
+	if err != nil {
+		odc.logger.Err(err).Msg("invalid status.")
+		return err
+	}
+
+	conf := odc.conf
+	if conf.Aliases == nil {
+		conf.Aliases = []config.AliasConfig{}
+	}
+
+	// remove alias if present
+	var aliases []config.AliasConfig
+	for _, alias := range conf.Aliases {
+		if alias.Name != c.Args().First() {
+			aliases = append(aliases, alias)
+		}
+	}
+
+	aliases = append(conf.Aliases, config.AliasConfig{
+		Name:        c.Args().First(),
+		Synchronize: status,
+	})
+	conf.Aliases = aliases
+
+	if err := odc.saveConfig(conf); err != nil {
+		odc.logger.Err(err).Msg("error while saving config.")
+		return err
+	}
+
+	m := odc.logger.Info().Str("Domain", c.Args().First())
+	if status {
+		m.Msg("enable synchronization.")
+	} else {
+		m.Msg("disable synchronization.")
+	}
+
+	return nil
+}
+
+func (odc *OpenDYDNSCLI) synchronize(c *cli.Context) error {
+	token, err := odc.getToken()
+	if err != nil {
+		odc.logger.Err(err).Msg("error while getting JWT token.")
+		return err
+	}
+
+	ip, err := odc.getRemoteIP()
+	if err != nil {
+		odc.logger.Err(err).Msg("error while getting remote IP.")
+		return err
+	}
+
+	apiClient := client.NewClient(odc.conf.APIAddr)
+
+	for _, alias := range odc.conf.Aliases {
+		if _, err := apiClient.UpdateAlias(token, proto.AliasDto{
+			Domain: alias.Name,
+			Value:  ip,
+		}); err != nil {
+			odc.logger.Err(err).Str("Domain", alias.Name).Str("Value", ip).Msg("error while updating alias.")
+		} else {
+			odc.logger.Info().Str("Domain", alias.Name).Str("Value", ip).Msg("successfully updated alias.")
+		}
+	}
+
 	return nil
 }
 
