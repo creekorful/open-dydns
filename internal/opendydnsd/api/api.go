@@ -10,13 +10,14 @@ import (
 	"net/http"
 )
 
+// API represent the Daemon REST API
 type API struct {
 	e          *echo.Echo
 	signingKey []byte
 }
 
-// TODO make this implement contract
-
+// NewAPI return a new API instance, wrapped around given Daemon instance
+// and with given config
 func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	// Configure echo
 	e := echo.New()
@@ -36,16 +37,16 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	authMiddleware := getAuthMiddleware(a.signingKey)
 
 	// Register endpoints
-	e.POST("/sessions", a.Authenticate(d))
-	e.GET("/aliases", a.GetAliases(d), authMiddleware)
-	e.POST("/aliases", a.RegisterAlias(d), authMiddleware)
-	e.PUT("/aliases", a.UpdateAlias(d), authMiddleware)
-	e.DELETE("/aliases/:name", a.DeleteAlias(d), authMiddleware)
+	e.POST("/sessions", a.authenticate(d))
+	e.GET("/aliases", a.getAliases(d), authMiddleware)
+	e.POST("/aliases", a.registerAlias(d), authMiddleware)
+	e.PUT("/aliases", a.updateAlias(d), authMiddleware)
+	e.DELETE("/aliases/:name", a.deleteAlias(d), authMiddleware)
 
 	return &a, nil
 }
 
-func (a *API) Authenticate(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) authenticate(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var cred proto.CredentialsDto
 		if err := c.Bind(&cred); err != nil {
@@ -67,7 +68,7 @@ func (a *API) Authenticate(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *API) GetAliases(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) getAliases(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -80,7 +81,7 @@ func (a *API) GetAliases(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *API) RegisterAlias(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) registerAlias(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -98,7 +99,7 @@ func (a *API) RegisterAlias(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *API) UpdateAlias(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) updateAlias(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -116,7 +117,7 @@ func (a *API) UpdateAlias(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-func (a *API) DeleteAlias(d daemon.Daemon) echo.HandlerFunc {
+func (a *API) deleteAlias(d daemon.Daemon) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		userCtx := getUserContext(c)
 
@@ -130,10 +131,12 @@ func (a *API) DeleteAlias(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
+// Start start the API server
 func (a *API) Start(address string) error {
 	return a.e.Start(address)
 }
 
+// Shutdown terminate the API server cleanly
 func (a *API) Shutdown(ctx context.Context) error {
 	return a.e.Shutdown(ctx)
 }

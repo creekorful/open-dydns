@@ -1,10 +1,10 @@
-package opendydns_cli
+package opendydnscli
 
 import (
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/common"
-	"github.com/creekorful/open-dydns/internal/opendydns-cli/client"
-	"github.com/creekorful/open-dydns/internal/opendydns-cli/config"
+	"github.com/creekorful/open-dydns/internal/opendydnscli/client"
+	"github.com/creekorful/open-dydns/internal/opendydnscli/config"
 	"github.com/creekorful/open-dydns/internal/proto"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog"
@@ -13,16 +13,19 @@ import (
 	"os"
 )
 
+// OpenDYDNSCLI represent the opendydns-cli running context
 type OpenDYDNSCLI struct {
 	conf     config.Config
 	confPath string
 	logger   *zerolog.Logger
 }
 
+// NewCLI instantiate a new OpenDYDNSCLI
 func NewCLI() *OpenDYDNSCLI {
 	return &OpenDYDNSCLI{}
 }
 
+// App return the cli.App to execute
 func (odc *OpenDYDNSCLI) App() *cli.App {
 	return &cli.App{
 		Name:    "opendydns-cli",

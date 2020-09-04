@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+// GetLogFlag return a pointer to a cli.StringFlag
+// to use for configuring logging
 func GetLogFlag() *cli.StringFlag {
 	return &cli.StringFlag{
 		Name:  "log-level",
@@ -13,6 +15,7 @@ func GetLogFlag() *cli.StringFlag {
 	}
 }
 
+// ConfigureLogger configure zerolog.Logger using given cli.Context
 func ConfigureLogger(c *cli.Context) (zerolog.Logger, error) {
 	// Parse log level
 	lvl, err := zerolog.ParseLevel(c.String("log-level"))

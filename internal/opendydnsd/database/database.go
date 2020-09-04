@@ -9,6 +9,7 @@ import (
 
 //go:generate mockgen -source database.go -destination=./database_mock.go -package=database
 
+// User is the mapping of an user
 type User struct {
 	gorm.Model
 
@@ -18,6 +19,7 @@ type User struct {
 	Aliases []Alias
 }
 
+// Alias is the mapping of a DyDNS alias
 type Alias struct {
 	gorm.Model
 
@@ -27,6 +29,8 @@ type Alias struct {
 	UserID uint // FK
 }
 
+// Connection represent a connection to the database
+// to perform CRUD
 type Connection interface {
 	CreateUser(email, hashedPassword string) (User, error)
 	FindUser(email string) (User, error)
@@ -41,6 +45,7 @@ type connection struct {
 	connection *gorm.DB
 }
 
+// OpenConnection tries to open a new database connection using given config
 func OpenConnection(conf config.DatabaseConfig) (Connection, error) {
 	driver, err := getDriver(conf)
 	if err != nil {

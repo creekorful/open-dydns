@@ -8,7 +8,7 @@ Open DyDNS is built upon two components:
 
 ## opendydnsd
 
-OpenDyDNSD is the daemon service running on your webserver, it will use a special dedicated config file
+OpenDyDNSD is the daemon service running on your sever, it will use a special dedicated config file
 to read the supported / configured domains & dial with a database to manage access control.
 
 The daemon is exposed using an authenticated REST API with JWT authentication.

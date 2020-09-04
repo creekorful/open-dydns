@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// GetApp return the cli.App representing the OpenDyDNSD
 func GetApp() *cli.App {
 	return &cli.App{
 		Name:    "opendydnsd",
@@ -61,12 +62,12 @@ func execute(c *cli.Context) error {
 	}
 
 	// Instantiate the API
-	a, err := api.NewAPI(d, conf.ApiConfig)
+	a, err := api.NewAPI(d, conf.APIConfig)
 	if err != nil {
 		log.Err(err).Msg("unable to instantiate the API")
 		return err
 	}
 
-	logger.Info().Str("Addr", conf.ApiConfig.ListenAddr).Msg("OpenDyDNSD API started.")
-	return a.Start(conf.ApiConfig.ListenAddr)
+	logger.Info().Str("Addr", conf.APIConfig.ListenAddr).Msg("OpenDyDNSD API started.")
+	return a.Start(conf.APIConfig.ListenAddr)
 }

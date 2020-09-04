@@ -11,12 +11,22 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrUserNotFound is returned when the wanted user cannot be found
 var ErrUserNotFound = echo.NewHTTPError(404, "user not found")
+
+// ErrAliasTaken is returned when the wanted alias is already taken by someone else
 var ErrAliasTaken = echo.NewHTTPError(409, "alias already taken")
+
+// ErrAliasAlreadyExist is returned when user already own the wanted alias
 var ErrAliasAlreadyExist = echo.NewHTTPError(409, "alias already exist")
+
+// ErrAliasNotFound is returned when the wanted alias cannot be found
 var ErrAliasNotFound = echo.NewHTTPError(404, "alias not found")
+
+// ErrInvalidParameters is returned when the given request is invalid
 var ErrInvalidParameters = echo.NewHTTPError(404, "invalid request parameter(s)")
 
+// Daemon represent OpenDyDNSD
 type Daemon interface {
 	Authenticate(cred proto.CredentialsDto) (proto.UserContext, error)
 	GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
@@ -31,6 +41,7 @@ type daemon struct {
 	logger *zerolog.Logger
 }
 
+// NewDaemon return a new Daemon instance with given configuration
 func NewDaemon(c config.Config, logger *zerolog.Logger) (Daemon, error) {
 	logger.Debug().Msg("connecting to the database.")
 	conn, err := database.OpenConnection(c.DatabaseConfig)
@@ -121,10 +132,10 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 		if a.UserID != userCtx.UserID {
 			d.logger.Debug().Msg("alias taken.")
 			return proto.AliasDto{}, ErrAliasTaken
-		} else {
-			d.logger.Debug().Msg("alias already exist.")
-			return proto.AliasDto{}, ErrAliasAlreadyExist
 		}
+
+		d.logger.Debug().Msg("alias already exist.")
+		return proto.AliasDto{}, ErrAliasAlreadyExist
 	}
 
 	// alias available
@@ -197,9 +208,9 @@ func (d *daemon) findUserAlias(name string, userID uint) (database.Alias, error)
 	if err != nil {
 		if errors.As(err, &gorm.ErrRecordNotFound) {
 			return database.Alias{}, ErrAliasNotFound
-		} else {
-			return database.Alias{}, err
 		}
+
+		return database.Alias{}, err
 	}
 
 	if al.UserID != userID {

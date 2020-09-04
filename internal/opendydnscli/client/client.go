@@ -6,10 +6,12 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// Client is an HTTP REST client to interface with a OpenDyDNS daemon
 type Client struct {
 	httpClient *resty.Client
 }
 
+// NewClient return a new configured Client using given baseURL
 func NewClient(baseURL string) *Client {
 	httpClient := resty.New()
 	httpClient.SetHostURL(baseURL)
@@ -20,6 +22,7 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
+// Authenticate see proto.APIContract
 func (c *Client) Authenticate(cred proto.CredentialsDto) (proto.TokenDto, error) {
 	var result proto.TokenDto
 	var err proto.ErrorDto
@@ -29,6 +32,7 @@ func (c *Client) Authenticate(cred proto.CredentialsDto) (proto.TokenDto, error)
 	return result, nonNilError(err)
 }
 
+// GetAliases see proto.APIContract
 func (c *Client) GetAliases(token proto.TokenDto) ([]proto.AliasDto, error) {
 	var result []proto.AliasDto
 	var err proto.ErrorDto
@@ -38,6 +42,7 @@ func (c *Client) GetAliases(token proto.TokenDto) ([]proto.AliasDto, error) {
 	return result, nonNilError(err)
 }
 
+// RegisterAlias see proto.APIContract
 func (c *Client) RegisterAlias(token proto.TokenDto, alias proto.AliasDto) (proto.AliasDto, error) {
 	var result proto.AliasDto
 	var err proto.ErrorDto
@@ -47,6 +52,7 @@ func (c *Client) RegisterAlias(token proto.TokenDto, alias proto.AliasDto) (prot
 	return result, nonNilError(err)
 }
 
+// UpdateAlias see proto.APIContract
 func (c *Client) UpdateAlias(token proto.TokenDto, alias proto.AliasDto) (proto.AliasDto, error) {
 	var result proto.AliasDto
 	var err proto.ErrorDto
@@ -56,6 +62,7 @@ func (c *Client) UpdateAlias(token proto.TokenDto, alias proto.AliasDto) (proto.
 	return result, nonNilError(err)
 }
 
+// DeleteAlias see proto.APIContract
 func (c *Client) DeleteAlias(token proto.TokenDto, name string) error {
 	var err proto.ErrorDto
 
