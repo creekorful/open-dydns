@@ -14,6 +14,9 @@ import (
 	"testing"
 )
 
+// TODO test provisioning fails case
+// TODO cleanup code?
+
 func TestValidatePassword(t *testing.T) {
 	d := daemon{}
 

@@ -34,6 +34,8 @@ type APIContract interface {
 	UpdateAlias(token TokenDto, alias AliasDto) (AliasDto, error)
 	// DELETE /aliases/{name}
 	DeleteAlias(token TokenDto, name string) error
+	// GET /domains
+	GetDomains(token TokenDto) ([]DomainDto, error)
 }
 
 type AliasDto struct {
@@ -52,6 +54,10 @@ type TokenDto struct {
 
 type ErrorDto struct {
 	Message string `json:"message"`
+}
+
+type DomainDto struct {
+	Domain string `json:"domain"`
 }
 ```
 

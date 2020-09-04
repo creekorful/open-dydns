@@ -42,6 +42,7 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	e.POST("/aliases", a.registerAlias(d), authMiddleware)
 	e.PUT("/aliases", a.updateAlias(d), authMiddleware)
 	e.DELETE("/aliases/:name", a.deleteAlias(d), authMiddleware)
+	e.GET("/domains", a.getDomains(d), authMiddleware)
 
 	return &a, nil
 }
@@ -128,6 +129,19 @@ func (a *API) deleteAlias(d daemon.Daemon) echo.HandlerFunc {
 		}
 
 		return c.NoContent(http.StatusOK)
+	}
+}
+
+func (a *API) getDomains(d daemon.Daemon) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userCtx := getUserContext(c)
+
+		domains, err := d.GetDomains(userCtx)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, domains)
 	}
 }
 

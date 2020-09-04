@@ -18,6 +18,11 @@ type APIContract interface {
 	// DeleteAlias delete the user given alias
 	// DELETE /aliases/{name}
 	DeleteAlias(token TokenDto, name string) error
+
+	// GetDomains return the list of available / supported domains
+	// for alias creation
+	// GET /domains
+	GetDomains(token TokenDto) ([]DomainDto, error)
 }
 
 // AliasDto represent a DyDNS alias
@@ -37,6 +42,12 @@ type CredentialsDto struct {
 // when issuing a authentication request
 type TokenDto struct {
 	Token string `json:"token"`
+}
+
+// DomainDto represent a domain usable to create alias
+// on the Daemon
+type DomainDto struct {
+	Domain string `json:"domain"`
 }
 
 // ErrorDto is the generic error response in case of API error

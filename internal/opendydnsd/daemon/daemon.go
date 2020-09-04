@@ -36,6 +36,7 @@ type Daemon interface {
 	RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
 	UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
 	DeleteAlias(userCtx proto.UserContext, aliasName string) error
+	GetDomains(userCtx proto.UserContext) ([]proto.DomainDto, error)
 	Logger() *zerolog.Logger
 }
 
@@ -236,6 +237,20 @@ func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error 
 	d.logger.Debug().Str("Domain", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
 
 	return nil
+}
+
+func (d *daemon) GetDomains(_ proto.UserContext) ([]proto.DomainDto, error) {
+	var domains []proto.DomainDto
+
+	for _, dnsProvisioner := range d.config.DNSProvisioners {
+		for _, domain := range dnsProvisioner.Domains {
+			domains = append(domains, proto.DomainDto{
+				Domain: domain,
+			})
+		}
+	}
+
+	return domains, nil
 }
 
 func (d *daemon) Logger() *zerolog.Logger {

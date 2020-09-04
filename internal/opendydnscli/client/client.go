@@ -12,7 +12,7 @@ type Client struct {
 }
 
 // NewClient return a new configured Client using given baseURL
-func NewClient(baseURL string) *Client {
+func NewClient(baseURL string) proto.APIContract {
 	httpClient := resty.New()
 	httpClient.SetHostURL(baseURL)
 	httpClient.SetAuthScheme("Bearer")
@@ -69,6 +69,15 @@ func (c *Client) DeleteAlias(token proto.TokenDto, name string) error {
 	_, _ = c.httpClient.R().SetAuthToken(token.Token).Delete(fmt.Sprintf("/aliases/%s", name))
 
 	return nonNilError(err)
+}
+
+func (c *Client) GetDomains(token proto.TokenDto) ([]proto.DomainDto, error) {
+	var result []proto.DomainDto
+	var err proto.ErrorDto
+
+	_, _ = c.httpClient.R().SetAuthToken(token.Token).SetResult(&result).SetError(&err).Get("/domains")
+
+	return result, nonNilError(err)
 }
 
 func nonNilError(err proto.ErrorDto) error {
