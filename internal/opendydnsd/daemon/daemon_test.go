@@ -2,7 +2,9 @@ package daemon
 
 import (
 	"errors"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/dns"
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
@@ -90,14 +92,14 @@ func TestDaemon_Authenticate_NonExistingUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindUser("lunamicard@gmail.com").
 		Return(database.User{}, gorm.ErrRecordNotFound)
 
@@ -112,11 +114,11 @@ func TestDaemon_Authenticate_InvalidPassword(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
 	pass, err := d.hashPassword("test")
@@ -124,7 +126,7 @@ func TestDaemon_Authenticate_InvalidPassword(t *testing.T) {
 		t.Error(err)
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindUser("lunamicard@gmail.com").
 		Return(database.User{Email: "lunamicard@gmail.com", Password: pass}, nil)
 
@@ -139,11 +141,11 @@ func TestDaemon_Authenticate(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
 	pass, err := d.hashPassword("test")
@@ -151,7 +153,7 @@ func TestDaemon_Authenticate(t *testing.T) {
 		t.Error(err)
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindUser("lunamicard@gmail.com").
 		Return(database.User{
 			Model:    gorm.Model{ID: 1},
@@ -175,14 +177,14 @@ func TestDaemon_GetAliases(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindUserAliases(uint(1)).
 		Return([]database.Alias{{Domain: "bar.baz", Host: "foo", Value: "8.8.8.8"}}, nil)
 
@@ -206,11 +208,11 @@ func TestDaemon_RegisterAlias_InvalidRequest(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
 	_, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{})
@@ -229,14 +231,14 @@ func TestDaemon_RegisterAlias_AliasTaken(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
-	mockObj.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
+	dbMock.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
 		Domain: "creekorful.de",
 		Host:   "www",
 		UserID: 12,
@@ -256,14 +258,14 @@ func TestDaemon_RegisterAlias_AliasAlreadyExist(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
-	mockObj.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
+	dbMock.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
 		Domain: "creekorful.de",
 		Host:   "www",
 		UserID: 1,
@@ -283,17 +285,33 @@ func TestDaemon_RegisterAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
+	provisionerMock := dns.NewMockProvisioner(mockCtrl)
+	providerMock := dns.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
+		config: config.DaemonConfig{
+			DNSProvisioners: []config.DNSProvisionerConfig{
+				{
+					Name:    "dummy",
+					Config:  map[string]string{},
+					Domains: []string{"creekorful.de"},
+				},
+			},
+		},
+		dnsProvider: providerMock,
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindAlias("www", "creekorful.de").
 		Return(database.Alias{}, gorm.ErrRecordNotFound)
-	mockObj.EXPECT().
+
+	providerMock.EXPECT().GetProvisioner("dummy", map[string]string{}).Return(provisionerMock, nil)
+	provisionerMock.EXPECT().AddRecord("www", "creekorful.de", "127.0.0.1").Return(nil)
+
+	dbMock.EXPECT().
 		CreateAlias(database.Alias{Domain: "creekorful.de", Host: "www", Value: "127.0.0.1"}, uint(1)).
 		Return(database.Alias{
 			Model:  gorm.Model{ID: 12},
@@ -321,11 +339,11 @@ func TestDaemon_UpdateAlias_InvalidAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
 	_, err := d.UpdateAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "bar.baz", Value: "127.0.0.1"})
@@ -339,14 +357,14 @@ func TestDaemon_UpdateAlias_AliasDoesNotExist(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindAlias("foo", "bar.baz").
 		Return(database.Alias{}, gorm.ErrRecordNotFound)
 
@@ -361,14 +379,14 @@ func TestDaemon_UpdateAlias_AliasNotOwned(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindAlias("foo", "bar.baz").
 		Return(database.Alias{
 			UserID: 12,
@@ -385,14 +403,26 @@ func TestDaemon_UpdateAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
+	provisionerMock := dns.NewMockProvisioner(mockCtrl)
+	providerMock := dns.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
+		config: config.DaemonConfig{
+			DNSProvisioners: []config.DNSProvisionerConfig{
+				{
+					Name:    "dummy",
+					Config:  map[string]string{},
+					Domains: []string{"bar.baz"},
+				},
+			},
+		},
+		dnsProvider: providerMock,
 	}
 
-	mockObj.EXPECT().
+	dbMock.EXPECT().
 		FindAlias("foo", "bar.baz").
 		Return(database.Alias{
 			Model:  gorm.Model{ID: 42},
@@ -401,7 +431,11 @@ func TestDaemon_UpdateAlias(t *testing.T) {
 			Value:  "127.0.0.1",
 			UserID: 1,
 		}, nil)
-	mockObj.EXPECT().UpdateAlias(database.Alias{
+
+	providerMock.EXPECT().GetProvisioner("dummy", map[string]string{}).Return(provisionerMock, nil)
+	provisionerMock.EXPECT().UpdateRecord("foo", "bar.baz", "8.8.8.8").Return(nil)
+
+	dbMock.EXPECT().UpdateAlias(database.Alias{
 		Model:  gorm.Model{ID: 42},
 		Domain: "bar.baz",
 		Host:   "foo",
@@ -430,14 +464,29 @@ func TestDaemon_DeleteAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	mockObj := database.NewMockConnection(mockCtrl)
+	dbMock := database.NewMockConnection(mockCtrl)
+	provisionerMock := dns.NewMockProvisioner(mockCtrl)
+	providerMock := dns.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
-		conn:   mockObj,
+		conn:   dbMock,
+		config: config.DaemonConfig{
+			DNSProvisioners: []config.DNSProvisionerConfig{
+				{
+					Name:    "dummy",
+					Config:  map[string]string{},
+					Domains: []string{"creekorful.be"},
+				},
+			},
+		},
+		dnsProvider: providerMock,
 	}
 
-	mockObj.EXPECT().DeleteAlias("www", "creekorful.be", uint(1)).Return(nil)
+	providerMock.EXPECT().GetProvisioner("dummy", map[string]string{}).Return(provisionerMock, nil)
+	provisionerMock.EXPECT().DeleteRecord("www", "creekorful.be").Return(nil)
+
+	dbMock.EXPECT().DeleteAlias("www", "creekorful.be", uint(1)).Return(nil)
 
 	if err := d.DeleteAlias(proto.UserContext{UserID: 1}, "www.creekorful.be"); err != nil {
 		t.Error(err)

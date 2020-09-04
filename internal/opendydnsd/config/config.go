@@ -20,9 +20,9 @@ var DefaultConfig = Config{
 
 // Config is the global Daemon configuration
 type Config struct {
-	APIConfig      APIConfig      `toml:"ApiConfig"`
-	DaemonConfig   DaemonConfig   `toml:"DaemonConfig"`
-	DatabaseConfig DatabaseConfig `toml:"DatabaseConfig"`
+	APIConfig      APIConfig `toml:"ApiConfig"`
+	DaemonConfig   DaemonConfig
+	DatabaseConfig DatabaseConfig
 }
 
 // Valid determinate if config is valid one
@@ -43,6 +43,14 @@ func (ac APIConfig) Valid() bool {
 
 // DaemonConfig represent the daemon configuration
 type DaemonConfig struct {
+	DNSProvisioners []DNSProvisionerConfig `toml:"DnsProvisioners"`
+}
+
+// DNSProvisionerConfig represent the configuration of a DNS provisioner
+type DNSProvisionerConfig struct {
+	Name    string
+	Config  map[string]string
+	Domains []string
 }
 
 // Valid determinate if config is valid one
