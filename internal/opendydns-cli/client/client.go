@@ -6,8 +6,6 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-// TODO make sure everything's right
-
 type Client struct {
 	httpClient *resty.Client
 }
@@ -45,6 +43,15 @@ func (c *Client) RegisterAlias(token proto.TokenDto, alias proto.AliasDto) (prot
 	var err proto.ErrorDto
 
 	_, _ = c.httpClient.R().SetAuthToken(token.Token).SetBody(alias).SetResult(&result).SetError(&err).Post("/aliases")
+
+	return result, nonNilError(err)
+}
+
+func (c *Client) UpdateAlias(token proto.TokenDto, alias proto.AliasDto) (proto.AliasDto, error) {
+	var result proto.AliasDto
+	var err proto.ErrorDto
+
+	_, _ = c.httpClient.R().SetAuthToken(token.Token).SetBody(alias).SetResult(&result).SetError(&err).Put("/aliases")
 
 	return result, nonNilError(err)
 }

@@ -38,7 +38,7 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 		Commands: []*cli.Command{
 			{
 				Name:      "login",
-				ArgsUsage: "EMAIL",
+				ArgsUsage: "<EMAIL>",
 				Usage:     "Authenticate against an OpenDyDNS daemon",
 				Action:    odc.login,
 			},
@@ -49,15 +49,21 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 			},
 			{
 				Name:      "add",
-				ArgsUsage: "ALIAS",
+				ArgsUsage: "<ALIAS>",
 				Usage:     "Register an alias",
 				Action:    odc.add,
 			},
 			{
 				Name:      "rm",
-				ArgsUsage: "ALIAS",
+				ArgsUsage: "<ALIAS>",
 				Usage:     "Delete an alias",
 				Action:    odc.rm,
+			},
+			{
+				Name:      "set-ip",
+				ArgsUsage: "<ALIAS> <IP>",
+				Usage:     "Override the IP value for given alias",
+				Action:    odc.setIp,
 			},
 		},
 	}
@@ -209,6 +215,34 @@ func (odc *OpenDYDNSCLI) rm(c *cli.Context) error {
 	}
 
 	log.Info().Str("Alias", name).Msg("successfully deleted alias.")
+	return nil
+}
+
+func (odc *OpenDYDNSCLI) setIp(c *cli.Context) error {
+	if c.Args().Len() != 2 {
+		return fmt.Errorf("missing ALIAS IP")
+	}
+
+	alias := c.Args().First()
+	ip := c.Args().Get(1)
+
+	apiClient := client.NewClient(odc.conf.APIAddr)
+
+	token, err := odc.getToken()
+	if err != nil {
+		return err
+	}
+
+	al, err := apiClient.UpdateAlias(token, proto.AliasDto{
+		Domain: alias,
+		Value:  ip,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Info().Str("Alias", al.Value).Str("Value", al.Value).Msg("successfully deleted alias.")
 	return nil
 }
 

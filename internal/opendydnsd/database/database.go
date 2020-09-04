@@ -32,7 +32,7 @@ type Connection interface {
 	FindAlias(name string) (Alias, error)
 	CreateAlias(alias Alias, userID uint) (Alias, error)
 	DeleteAlias(name string, userID uint) error
-	UpdateAlias(alias Alias, userID uint) (Alias, error)
+	UpdateAlias(alias Alias) (Alias, error)
 }
 
 type connection struct {
@@ -100,7 +100,7 @@ func (c *connection) DeleteAlias(name string, userID uint) error {
 	return result.Error
 }
 
-func (c *connection) UpdateAlias(alias Alias, userID uint) (Alias, error) {
+func (c *connection) UpdateAlias(alias Alias) (Alias, error) {
 	result := c.connection.Model(&alias).Updates(Alias{ // TODO restrict userID
 		Domain: alias.Domain,
 		Value:  alias.Value,

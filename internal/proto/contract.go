@@ -1,6 +1,5 @@
 package proto
 
-// TODO make daemon implement this interface
 type APIContract interface {
 	// POST /sessions
 	Authenticate(cred CredentialsDto) (TokenDto, error)
@@ -8,6 +7,8 @@ type APIContract interface {
 	GetAliases(token TokenDto) ([]AliasDto, error)
 	// POST /aliases
 	RegisterAlias(token TokenDto, alias AliasDto) (AliasDto, error)
+	// PUT /aliases/{name}
+	UpdateAlias(token TokenDto, alias AliasDto) (AliasDto, error)
 	// DELETE /aliases/{name}
 	DeleteAlias(token TokenDto, name string) error
 }

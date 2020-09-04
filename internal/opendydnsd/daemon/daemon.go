@@ -21,6 +21,7 @@ type Daemon interface {
 	Authenticate(cred proto.CredentialsDto) (proto.UserContext, error)
 	GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
 	RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
+	UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
 	DeleteAlias(userCtx proto.UserContext, aliasName string) error
 }
 
@@ -135,6 +136,23 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 	return newAliasDto(a), nil
 }
 
+func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error) {
+	al, err := d.findUserAlias(alias.Domain, userCtx.UserID)
+	if err != nil {
+		return proto.AliasDto{}, err
+	}
+
+	// Update the alias
+	al.Value = alias.Value
+	al, err = d.conn.UpdateAlias(al)
+	if err != nil {
+		log.Err(err).Msg("error while updating alias.")
+		return proto.AliasDto{}, err
+	}
+
+	return newAliasDto(al), err
+}
+
 func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error {
 	if err := d.conn.DeleteAlias(aliasName, userCtx.UserID); err != nil {
 		log.Warn().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
@@ -163,6 +181,23 @@ func (d *daemon) validatePassword(hashedPassword, plainPassword string) bool {
 	}
 
 	return true
+}
+
+func (d *daemon) findUserAlias(name string, userID uint) (database.Alias, error) {
+	al, err := d.conn.FindAlias(name)
+	if err != nil {
+		if errors.As(err, &gorm.ErrRecordNotFound) {
+			return database.Alias{}, ErrAliasNotFound
+		} else {
+			return database.Alias{}, err
+		}
+	}
+
+	if al.UserID != userID {
+		return database.Alias{}, ErrAliasNotFound
+	}
+
+	return al, nil
 }
 
 // Alias -> AliasDto

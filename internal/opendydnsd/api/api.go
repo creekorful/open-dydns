@@ -15,6 +15,8 @@ type API struct {
 	signingKey []byte
 }
 
+// TODO make this implement contract
+
 func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	// Configure echo
 	e := echo.New()
@@ -37,6 +39,7 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	e.POST("/sessions", a.Authenticate(d))
 	e.GET("/aliases", a.GetAliases(d), authMiddleware)
 	e.POST("/aliases", a.RegisterAlias(d), authMiddleware)
+	e.PUT("/aliases", a.UpdateAlias(d), authMiddleware)
 	e.DELETE("/aliases/:name", a.DeleteAlias(d), authMiddleware)
 
 	return &a, nil
@@ -92,6 +95,24 @@ func (a *API) RegisterAlias(d daemon.Daemon) echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusCreated, alias)
+	}
+}
+
+func (a *API) UpdateAlias(d daemon.Daemon) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userCtx := getUserContext(c)
+
+		var alias proto.AliasDto
+		if err := c.Bind(&alias); err != nil {
+			return c.NoContent(http.StatusUnprocessableEntity)
+		}
+
+		alias, err := d.UpdateAlias(userCtx, alias)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, alias)
 	}
 }
 

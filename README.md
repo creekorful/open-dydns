@@ -16,65 +16,40 @@ The daemon configuration is only configurable by editing the config file, not tr
 
 ### API contract
 
-#### POST /sessions
+Here's the Go definition of the API contract.
 
-Authenticate against the API.
-This will either return the token with an HTTP 200, 
-or an error response if invalid credentials are supplied.
+```go
+package proto
 
-Request Body:
-
-```json
-{
-  "email": "test",
-  "password": "test"
+type APIContract interface {
+	// POST /sessions
+	Authenticate(cred CredentialsDto) (TokenDto, error)
+	// GET /aliases
+	GetAliases(token TokenDto) ([]AliasDto, error)
+	// POST /aliases
+	RegisterAlias(token TokenDto, alias AliasDto) (AliasDto, error)
+	// PUT /aliases/{name}
+	UpdateAlias(token TokenDto, alias AliasDto) (AliasDto, error)
+	// DELETE /aliases/{name}
+	DeleteAlias(token TokenDto, name string) error
 }
-```
 
-Response Body:
-
-```json
-{
-  "token": "token"
+type AliasDto struct {
+	Domain string `json:"domain"`
+	Value  string `json:"value"`
 }
-```
 
-#### GET /aliases
-
-Get the aliases of logged user.
-
-Response Body:
-
-```json
-[
-  {
-    "domain": "foo.example.org",
-    "value": "127.0.0.1"
-  }
-]
-```
-
-#### POST /aliases
-
-Register given aliases for logged user.
-It either returns the created resource with an HTTP 201,
-or an error response if something happened.
-
-Request Body:
-
-```json
-{
-  "domain": "bar.example.org",
-  "value": "127.0.0.1"
+type CredentialsDto struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
-```
 
-Response Body:
+type TokenDto struct {
+	Token string `json:"token"`
+}
 
-```json
-{
-  "domain": "bar.example.org",
-  "value": "127.0.0.1"
+type ErrorDto struct {
+	Message string `json:"message"`
 }
 ```
 
@@ -86,7 +61,7 @@ or an error response if something happened.
 
 ### The configuration file
 
-Below is a example of the configuration file:
+Below is an example of the configuration file:
 
 ```toml
 [ApiConfig]
@@ -96,7 +71,8 @@ Below is a example of the configuration file:
 [DaemonConfig]
 
 [DatabaseConfig]
-
+  DSN = "test.db"
+  Driver = "sqlite"
 ```
 
 ## opendydns-cli
