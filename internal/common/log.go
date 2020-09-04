@@ -2,7 +2,6 @@ package common
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -14,12 +13,20 @@ func GetLogFlag() *cli.StringFlag {
 	}
 }
 
-func ConfigureLogger(c *cli.Context) error {
+func ConfigureLogger(c *cli.Context) (zerolog.Logger, error) {
+	// Parse log level
 	lvl, err := zerolog.ParseLevel(c.String("log-level"))
 	if err != nil {
-		return err
+		return zerolog.Logger{}, err
 	}
 
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout}).Level(lvl)
-	return nil
+	writer := zerolog.NewConsoleWriter()
+	writer.Out = os.Stdout
+
+	l := zerolog.New(writer).
+		With().
+		Timestamp().
+		Logger()
+
+	return l.Level(lvl), nil
 }

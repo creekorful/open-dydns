@@ -2,3 +2,5 @@
 test.db
 opendydnsd.toml
 opendydns-cli.toml
+**/**_mock.go
+coverage.coverprofile

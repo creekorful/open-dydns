@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -source database.go -destination=./database_mock.go -package=database
+
 type User struct {
 	gorm.Model
 
@@ -59,7 +61,7 @@ func OpenConnection(conf config.DatabaseConfig) (Connection, error) {
 
 	return &connection{
 		connection: conn,
-	} , nil
+	}, nil
 }
 
 func (c *connection) CreateUser(email, hashedPassword string) (User, error) {

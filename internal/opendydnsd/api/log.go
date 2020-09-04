@@ -2,17 +2,17 @@ package api
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 )
 
-func newZeroLogMiddleware() echo.MiddlewareFunc {
+func newZeroLogMiddleware(logger *zerolog.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			if err := next(c); err != nil {
 				c.Error(err)
 			}
 
-			log.Debug().
+			logger.Debug().
 				Str("RemoteAddr", c.RealIP()).
 				Int("Status", c.Response().Status).
 				Int64("Length", c.Response().Size).

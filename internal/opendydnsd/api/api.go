@@ -30,7 +30,7 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	}
 
 	// Register global middlewares
-	e.Use(newZeroLogMiddleware())
+	e.Use(newZeroLogMiddleware(d.Logger()))
 
 	// Register per-route middlewares
 	authMiddleware := getAuthMiddleware(a.signingKey)

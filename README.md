@@ -53,12 +53,6 @@ type ErrorDto struct {
 }
 ```
 
-#### DELETE /aliases/{alias}
-
-Delete given alias for logged user.
-It either returns an HTTP 204 is operation is successful,
-or an error response if something happened.
-
 ### The configuration file
 
 Below is an example of the configuration file:

@@ -10,9 +10,9 @@ type Client struct {
 	httpClient *resty.Client
 }
 
-func NewClient(baseUrl string) *Client {
+func NewClient(baseURL string) *Client {
 	httpClient := resty.New()
-	httpClient.SetHostURL(baseUrl)
+	httpClient.SetHostURL(baseURL)
 	httpClient.SetAuthScheme("Bearer")
 
 	return &Client{

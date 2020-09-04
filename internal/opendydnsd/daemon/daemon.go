@@ -6,7 +6,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
 	"github.com/creekorful/open-dydns/internal/proto"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
+	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -23,22 +23,25 @@ type Daemon interface {
 	RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
 	UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
 	DeleteAlias(userCtx proto.UserContext, aliasName string) error
+	Logger() *zerolog.Logger
 }
 
 type daemon struct {
-	conn database.Connection
+	conn   database.Connection
+	logger *zerolog.Logger
 }
 
-func NewDaemon(c config.Config) (Daemon, error) {
-	log.Debug().Msg("connecting to the database.")
+func NewDaemon(c config.Config, logger *zerolog.Logger) (Daemon, error) {
+	logger.Debug().Msg("connecting to the database.")
 	conn, err := database.OpenConnection(c.DatabaseConfig)
 	if err != nil {
 		return nil, err
 	}
-	log.Info().Str("Driver", c.DatabaseConfig.Driver).Msg("database connection established!")
+	logger.Info().Str("Driver", c.DatabaseConfig.Driver).Msg("database connection established!")
 
 	d := &daemon{
-		conn: conn,
+		conn:   conn,
+		logger: logger,
 	}
 
 	// TODO remove below code
@@ -58,7 +61,7 @@ func NewDaemon(c config.Config) (Daemon, error) {
 
 func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, error) {
 	if cred.Email == "" || cred.Password == "" {
-		log.Warn().Msg("invalid authentication request: bad request.")
+		d.logger.Warn().Msg("invalid authentication request: bad request.")
 		return proto.UserContext{}, ErrInvalidParameters
 	}
 
@@ -72,11 +75,11 @@ func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, err
 
 	// Validate the password
 	if !d.validatePassword(user.Password, cred.Password) {
-		log.Warn().Msg("invalid authentication request: invalid password.")
+		d.logger.Warn().Msg("invalid authentication request: invalid password.")
 		return proto.UserContext{}, ErrUserNotFound
 	}
 
-	log.Debug().Str("Email", user.Email).Msg("successfully authenticated.")
+	d.logger.Debug().Str("Email", user.Email).Msg("successfully authenticated.")
 
 	return proto.UserContext{
 		UserID: user.ID,
@@ -87,7 +90,7 @@ func (d *daemon) GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
 	aliases, err := d.conn.FindUserAliases(userCtx.UserID)
 
 	if err != nil && !errors.As(err, &gorm.ErrRecordNotFound) {
-		log.Err(err).Msg("error while fetching database.")
+		d.logger.Err(err).Msg("error while fetching database.")
 		return nil, err
 	}
 
@@ -101,7 +104,7 @@ func (d *daemon) GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
 
 func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error) {
 	if alias.Domain == "" || alias.Value == "" {
-		log.Warn().Msg("invalid register alias request: bad request.")
+		d.logger.Warn().Msg("invalid register alias request: bad request.")
 		return proto.AliasDto{}, ErrInvalidParameters
 	}
 
@@ -109,17 +112,17 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 
 	// technical error
 	if err != nil && !errors.As(err, &gorm.ErrRecordNotFound) {
-		log.Err(err).Msg("error while fetching database.")
+		d.logger.Err(err).Msg("error while fetching database.")
 		return proto.AliasDto{}, err
 	}
 
 	// record already exist
 	if err == nil {
 		if a.UserID != userCtx.UserID {
-			log.Debug().Msg("alias taken.")
+			d.logger.Debug().Msg("alias taken.")
 			return proto.AliasDto{}, ErrAliasTaken
 		} else {
-			log.Debug().Msg("alias already exist.")
+			d.logger.Debug().Msg("alias already exist.")
 			return proto.AliasDto{}, ErrAliasAlreadyExist
 		}
 	}
@@ -131,7 +134,7 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 	if err != nil {
 		return proto.AliasDto{}, err
 	}
-	log.Debug().Str("Domain", a.Domain).Msg("new alias created.")
+	d.logger.Debug().Str("Domain", a.Domain).Msg("new alias created.")
 
 	return newAliasDto(a), nil
 }
@@ -146,23 +149,29 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 	al.Value = alias.Value
 	al, err = d.conn.UpdateAlias(al)
 	if err != nil {
-		log.Err(err).Msg("error while updating alias.")
+		d.logger.Err(err).Msg("error while updating alias.")
 		return proto.AliasDto{}, err
 	}
+
+	d.logger.Debug().Str("Domain", alias.Domain).Str("Value", alias.Value).Msg("successfully updated alias.")
 
 	return newAliasDto(al), err
 }
 
 func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error {
 	if err := d.conn.DeleteAlias(aliasName, userCtx.UserID); err != nil {
-		log.Warn().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
+		d.logger.Warn().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
 		return err
 	}
 	// TODO trigger linked code
 
-	log.Debug().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
+	d.logger.Debug().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
 
 	return nil
+}
+
+func (d *daemon) Logger() *zerolog.Logger {
+	return d.logger
 }
 
 func (d *daemon) hashPassword(password string) (string, error) {
@@ -211,7 +220,6 @@ func newAliasDto(alias database.Alias) proto.AliasDto {
 // AliasDto -> Alias
 func newAlias(alias proto.AliasDto) database.Alias {
 	return database.Alias{
-		Model:  gorm.Model{},
 		Domain: alias.Domain,
 		Value:  alias.Value,
 	}

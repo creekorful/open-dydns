@@ -29,7 +29,8 @@ func GetApp() *cli.App {
 
 func execute(c *cli.Context) error {
 	// Configure log level
-	if err := common.ConfigureLogger(c); err != nil {
+	logger, err := common.ConfigureLogger(c)
+	if err != nil {
 		return err
 	}
 
@@ -51,10 +52,10 @@ func execute(c *cli.Context) error {
 	}
 
 	// Display version etc...
-	log.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")
+	logger.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")
 
 	// Instantiate the Daemon
-	d, err := daemon.NewDaemon(conf)
+	d, err := daemon.NewDaemon(conf, &logger)
 	if err != nil {
 		return err
 	}
@@ -66,6 +67,6 @@ func execute(c *cli.Context) error {
 		return err
 	}
 
-	log.Info().Str("Addr", conf.ApiConfig.ListenAddr).Msg("OpenDyDNSD API started.")
+	logger.Info().Str("Addr", conf.ApiConfig.ListenAddr).Msg("OpenDyDNSD API started.")
 	return a.Start(conf.ApiConfig.ListenAddr)
 }

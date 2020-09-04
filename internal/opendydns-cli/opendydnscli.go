@@ -6,7 +6,8 @@ import (
 	"github.com/creekorful/open-dydns/internal/opendydns-cli/client"
 	"github.com/creekorful/open-dydns/internal/opendydns-cli/config"
 	"github.com/creekorful/open-dydns/internal/proto"
-	"github.com/rs/zerolog/log"
+	"github.com/go-resty/resty/v2"
+	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"
 	"os"
@@ -15,6 +16,7 @@ import (
 type OpenDYDNSCLI struct {
 	conf     config.Config
 	confPath string
+	logger   *zerolog.Logger
 }
 
 func NewCLI() *OpenDYDNSCLI {
@@ -63,7 +65,7 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 				Name:      "set-ip",
 				ArgsUsage: "<ALIAS> <IP>",
 				Usage:     "Override the IP value for given alias",
-				Action:    odc.setIp,
+				Action:    odc.setIP,
 			},
 		},
 	}
@@ -71,14 +73,17 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 
 func (odc *OpenDYDNSCLI) before(c *cli.Context) error {
 	// Configure log level
-	if err := common.ConfigureLogger(c); err != nil {
+	logger, err := common.ConfigureLogger(c)
+	if err != nil {
 		return err
 	}
+
+	odc.logger = &logger
 
 	// Create configuration file if not exist
 	configFile := c.String("config")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		log.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
+		odc.logger.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
 		if err := config.Save(config.DefaultConfig, configFile); err != nil {
 			return err
 		}
@@ -133,7 +138,7 @@ func (odc *OpenDYDNSCLI) login(c *cli.Context) error {
 		return err
 	}
 
-	log.Info().Str("Email", c.Args().First()).Msg("successfully authenticated.")
+	odc.logger.Info().Str("Email", c.Args().First()).Msg("successfully authenticated.")
 
 	return nil // TODO implement
 }
@@ -158,7 +163,7 @@ func (odc *OpenDYDNSCLI) ls(_ *cli.Context) error {
 
 	// TODO use proper table
 	for _, alias := range aliases {
-		fmt.Printf("%s %s\n", alias.Domain, alias.Value)
+		fmt.Printf("%s -> %s\n", alias.Domain, alias.Value)
 	}
 
 	return nil
@@ -178,7 +183,7 @@ func (odc *OpenDYDNSCLI) add(c *cli.Context) error {
 		return err
 	}
 
-	ip, err := odc.getRemoteIp()
+	ip, err := odc.getRemoteIP()
 	if err != nil {
 		return err
 	}
@@ -192,7 +197,7 @@ func (odc *OpenDYDNSCLI) add(c *cli.Context) error {
 		return err
 	}
 
-	log.Info().Str("Alias", alias.Domain).Msg("successfully created alias.")
+	odc.logger.Info().Str("Alias", alias.Domain).Msg("successfully created alias.")
 	return nil
 }
 
@@ -214,11 +219,11 @@ func (odc *OpenDYDNSCLI) rm(c *cli.Context) error {
 		return err
 	}
 
-	log.Info().Str("Alias", name).Msg("successfully deleted alias.")
+	odc.logger.Info().Str("Alias", name).Msg("successfully deleted alias.")
 	return nil
 }
 
-func (odc *OpenDYDNSCLI) setIp(c *cli.Context) error {
+func (odc *OpenDYDNSCLI) setIP(c *cli.Context) error {
 	if c.Args().Len() != 2 {
 		return fmt.Errorf("missing ALIAS IP")
 	}
@@ -242,7 +247,7 @@ func (odc *OpenDYDNSCLI) setIp(c *cli.Context) error {
 		return err
 	}
 
-	log.Info().Str("Alias", al.Value).Str("Value", al.Value).Msg("successfully deleted alias.")
+	odc.logger.Info().Str("Alias", al.Value).Str("Value", al.Value).Msg("successfully deleted alias.")
 	return nil
 }
 
@@ -259,6 +264,12 @@ func (odc *OpenDYDNSCLI) getToken() (proto.TokenDto, error) {
 	return proto.TokenDto{Token: odc.conf.Token}, nil
 }
 
-func (odc *OpenDYDNSCLI) getRemoteIp() (string, error) {
-	return "127.0.0.1", nil
+func (odc *OpenDYDNSCLI) getRemoteIP() (string, error) {
+	c := resty.New()
+	r, err := c.R().Get("https://ifconfig.me/ip")
+	if err != nil {
+		return "", err
+	}
+
+	return r.String(), nil
 }
