@@ -103,12 +103,12 @@ func (c *connection) CreateAlias(alias Alias, userID uint) (Alias, error) {
 }
 
 func (c *connection) DeleteAlias(name string, userID uint) error {
-	result := c.connection.Where("domain = ?", name).Delete(Alias{}) // TODO restrict userID
+	result := c.connection.Where("domain = ? AND user_id = ?", name, userID).Delete(Alias{})
 	return result.Error
 }
 
 func (c *connection) UpdateAlias(alias Alias) (Alias, error) {
-	result := c.connection.Model(&alias).Updates(Alias{ // TODO restrict userID
+	result := c.connection.Model(&alias).Updates(Alias{
 		Domain: alias.Domain,
 		Value:  alias.Value,
 	})

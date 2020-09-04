@@ -143,7 +143,7 @@ func (odc *OpenDYDNSCLI) login(c *cli.Context) error {
 
 	odc.logger.Info().Str("Email", c.Args().First()).Msg("successfully authenticated.")
 
-	return nil // TODO implement
+	return nil
 }
 
 func (odc *OpenDYDNSCLI) ls(_ *cli.Context) error {
