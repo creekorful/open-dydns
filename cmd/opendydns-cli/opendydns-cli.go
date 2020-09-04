@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	if err := opendydns_cli.GetApp().Run(os.Args); err != nil {
-		log.Err(err).Msg("unable to start OpenDyDNS-CLI.")
+	if err := opendydns_cli.NewCLI().App().Run(os.Args); err != nil {
+		log.Err(err).Msg("error while executing OpenDyDNS-CLI.")
 		os.Exit(1)
 	}
 }

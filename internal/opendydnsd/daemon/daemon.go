@@ -36,9 +36,23 @@ func NewDaemon(c config.Config) (Daemon, error) {
 	}
 	log.Info().Str("Driver", c.DatabaseConfig.Driver).Msg("database connection established!")
 
-	return &daemon{
+	d := &daemon{
 		conn: conn,
-	}, nil
+	}
+
+	// TODO remove below code
+	if _, err := conn.FindUser("lunamicard@gmail.com"); errors.As(err, &gorm.ErrRecordNotFound) {
+		pass, err := d.hashPassword("test")
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := conn.CreateUser("lunamicard@gmail.com", pass); err != nil {
+			return nil, err
+		}
+	}
+
+	return d, nil
 }
 
 func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, error) {
@@ -122,8 +136,15 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 }
 
 func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error {
+	if err := d.conn.DeleteAlias(aliasName, userCtx.UserID); err != nil {
+		log.Warn().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
+		return err
+	}
 	// TODO trigger linked code
-	return d.conn.DeleteAlias(aliasName, userCtx.UserID)
+
+	log.Debug().Str("Alias", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
+
+	return nil
 }
 
 func (d *daemon) hashPassword(password string) (string, error) {

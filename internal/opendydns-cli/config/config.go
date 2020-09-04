@@ -15,7 +15,7 @@ type Config struct {
 }
 
 func (c Config) Valid() bool {
-	return c.APIAddr != "" && c.Token != ""
+	return c.APIAddr != ""
 }
 
 func Load(path string) (Config, error) {

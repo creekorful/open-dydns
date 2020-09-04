@@ -1,7 +1,6 @@
 package database
 
 import (
-	"errors"
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"gorm.io/driver/sqlite"
@@ -58,18 +57,9 @@ func OpenConnection(conf config.DatabaseConfig) (Connection, error) {
 		return nil, err
 	}
 
-	// TODO remove this code
-	c := &connection{connection: conn}
-
-	// Create demo user
-	_, err = c.FindUser("lunamicard@gmail.com")
-	if errors.As(err, &gorm.ErrRecordNotFound) {
-		if _, err := c.CreateUser("lunamicard@gmail.com", "test"); err != nil {
-			return nil, err
-		}
-	}
-
-	return c, nil
+	return &connection{
+		connection: conn,
+	} , nil
 }
 
 func (c *connection) CreateUser(email, hashedPassword string) (User, error) {
