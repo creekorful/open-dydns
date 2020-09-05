@@ -1,22 +1,37 @@
 package opendydnsd
 
 import (
+	"fmt"
 	"github.com/creekorful/open-dydns/internal/common"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/api"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
-	"github.com/rs/zerolog/log"
+	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 	"os"
 )
 
+// OpenDyDNSD represent a instance of the Daemon app
+type OpenDyDNSD struct {
+	conf     config.Config
+	confPath string
+	logger   *zerolog.Logger
+}
+
+// NewDaemon return a new instance of the daemon app
+func NewDaemon() *OpenDyDNSD {
+	return &OpenDyDNSD{}
+}
+
 // GetApp return the cli.App representing the OpenDyDNSD
-func GetApp() *cli.App {
+func (d *OpenDyDNSD) GetApp() *cli.App {
 	return &cli.App{
 		Name:    "opendydnsd",
 		Usage:   "The OpenDyDNS(Daemon)",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
 		Version: "0.1.0",
+		Before:  d.before,
 		Flags: []cli.Flag{
 			common.GetLogFlag(),
 			&cli.StringFlag{
@@ -24,50 +39,96 @@ func GetApp() *cli.App {
 				Value: "opendydnsd.toml",
 			},
 		},
-		Action: execute,
+		Commands: []*cli.Command{
+			{
+				Name:      "create-user",
+				ArgsUsage: "<EMAIL> <PASSWORD>",
+				Usage:     "Create an user account",
+				Action:    d.createUser,
+			},
+		},
+		Action: d.startDaemon,
 	}
 }
 
-func execute(c *cli.Context) error {
+func (d *OpenDyDNSD) before(c *cli.Context) error {
 	// Configure log level
 	logger, err := common.ConfigureLogger(c)
 	if err != nil {
 		return err
 	}
+	d.logger = &logger
 
 	// Create configuration file if not exist
 	configFile := c.String("config")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		log.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
+		d.logger.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
 		if err := config.Save(config.DefaultConfig, configFile); err != nil {
 			return err
 		}
-
-		return nil
+		return fmt.Errorf("please configure the config file")
 	}
+	d.confPath = configFile
 
 	// Load the configuration file
 	conf, err := config.Load(configFile)
 	if err != nil {
 		return err
 	}
+	d.conf = conf
 
+	return nil
+}
+
+func (d *OpenDyDNSD) startDaemon(c *cli.Context) error {
 	// Display version etc...
-	logger.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")
+	d.logger.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")
 
 	// Instantiate the Daemon
-	d, err := daemon.NewDaemon(conf, &logger)
+	daem, err := daemon.NewDaemon(d.conf, d.logger)
 	if err != nil {
+		d.logger.Err(err).Msg("Unable to start the daemon.")
 		return err
 	}
 
 	// Instantiate the API
-	a, err := api.NewAPI(d, conf.APIConfig)
+	a, err := api.NewAPI(daem, d.conf.APIConfig)
 	if err != nil {
-		log.Err(err).Msg("unable to instantiate the API")
+		d.logger.Err(err).Msg("unable to instantiate the API.")
 		return err
 	}
 
-	logger.Info().Str("Addr", conf.APIConfig.ListenAddr).Msg("OpenDyDNSD API started.")
-	return a.Start(conf.APIConfig.ListenAddr)
+	d.logger.Info().Str("Addr", d.conf.APIConfig.ListenAddr).Msg("OpenDyDNSD API started.")
+	return a.Start(d.conf.APIConfig.ListenAddr)
+}
+
+func (d *OpenDyDNSD) createUser(c *cli.Context) error {
+	if c.Args().Len() != 2 {
+		err := fmt.Errorf("missing EMAIL USERNAME")
+		d.logger.Err(err).Msg("missing EMAIL USERNAME.")
+		return err
+	}
+
+	email := c.Args().First()
+	pass := c.Args().Get(1)
+
+	d.logger.Info().Str("Email", email).Msg("Creating user.")
+
+	daem, err := daemon.NewDaemon(d.conf, d.logger)
+	if err != nil {
+		d.logger.Err(err).Msg("Unable to start the daemon.")
+		return err
+	}
+
+	if _, err := daem.CreateUser(proto.CredentialsDto{
+		Email:    email,
+		Password: pass,
+	}); err != nil {
+		d.logger.Err(err).Str("Email", email).Msg("Unable to create user account.")
+		return err
+	}
+
+	d.logger.Info().Str("Email", email).Msg("Successfully created user account.")
+
+	return nil
 }

@@ -31,6 +31,7 @@ var ErrInvalidParameters = echo.NewHTTPError(404, "invalid request parameter(s)"
 
 // Daemon represent OpenDyDNSD
 type Daemon interface {
+	CreateUser(cred proto.CredentialsDto) (proto.UserContext, error)
 	Authenticate(cred proto.CredentialsDto) (proto.UserContext, error)
 	GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
 	RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error)
@@ -63,19 +64,33 @@ func NewDaemon(c config.Config, logger *zerolog.Logger) (Daemon, error) {
 		dnsProvider: dns.NewProvider(),
 	}
 
-	// TODO remove below code
-	if _, err := conn.FindUser("lunamicard@gmail.com"); errors.As(err, &gorm.ErrRecordNotFound) {
-		pass, err := d.hashPassword("test")
-		if err != nil {
-			return nil, err
-		}
+	return d, nil
+}
 
-		if _, err := conn.CreateUser("lunamicard@gmail.com", pass); err != nil {
-			return nil, err
-		}
+func (d *daemon) CreateUser(cred proto.CredentialsDto) (proto.UserContext, error) {
+	if cred.Email == "" || cred.Password == "" {
+		d.logger.Warn().Msg("invalid create user request: bad request.")
+		return proto.UserContext{}, ErrInvalidParameters
 	}
 
-	return d, nil
+	// Make sure user doesn't already exist
+	_, err := d.conn.FindUser(cred.Email)
+	if err != nil && !errors.As(err, &gorm.ErrRecordNotFound) {
+		d.logger.Err(err).Msg("error while fetching database.")
+		return proto.UserContext{}, err
+	}
+
+	// Doesn't exist yet!
+	pass, err := d.hashPassword(cred.Password)
+	if err != nil {
+		return proto.UserContext{}, err
+	}
+
+	if _, err := d.conn.CreateUser(cred.Email, pass); err != nil {
+		return proto.UserContext{}, err
+	}
+
+	return d.Authenticate(cred)
 }
 
 func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, error) {
@@ -260,6 +275,7 @@ func (d *daemon) Logger() *zerolog.Logger {
 func (d *daemon) hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
+		d.logger.Err(err).Msg("error while hashing password.")
 		return "", err
 	}
 
