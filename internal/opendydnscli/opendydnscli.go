@@ -49,9 +49,10 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 				Action:    odc.login,
 			},
 			{
-				Name:   "ls",
-				Usage:  "List current DyDNS aliases",
-				Action: odc.ls,
+				Name:      "ls",
+				ArgsUsage: "<WHAT>",
+				Usage:     "List given resource (aliases, domains). Defaults to aliases",
+				Action:    odc.ls,
 			},
 			{
 				Name:      "add",
@@ -167,12 +168,20 @@ func (odc *OpenDYDNSCLI) login(c *cli.Context) error {
 	return nil
 }
 
-func (odc *OpenDYDNSCLI) ls(_ *cli.Context) error {
+func (odc *OpenDYDNSCLI) ls(c *cli.Context) error {
 	token, err := odc.getToken()
 	if err != nil {
 		return err
 	}
 
+	if c.Args().First() == "domains" {
+		return odc.lsDomains(token)
+	}
+
+	return odc.lsAliases(token)
+}
+
+func (odc *OpenDYDNSCLI) lsAliases(token proto.TokenDto) error {
 	apiClient := client.NewClient(odc.conf.APIAddr)
 
 	aliases, err := apiClient.GetAliases(token)
@@ -194,6 +203,26 @@ func (odc *OpenDYDNSCLI) ls(_ *cli.Context) error {
 		}
 
 		odc.logger.Info().Str("Domain", alias.Domain).Str("Value", alias.Value).Bool("Synchronize", status).Msg("")
+	}
+
+	return nil
+}
+
+func (odc *OpenDYDNSCLI) lsDomains(token proto.TokenDto) error {
+	apiClient := client.NewClient(odc.conf.APIAddr)
+
+	domains, err := apiClient.GetDomains(token)
+	if err != nil {
+		return err
+	}
+
+	if len(domains) == 0 {
+		odc.logger.Info().Msg("no domains configured.")
+		return nil
+	}
+
+	for _, domain := range domains {
+		odc.logger.Info().Str("Domain", domain.Domain).Msg("")
 	}
 
 	return nil
@@ -339,7 +368,7 @@ func (odc *OpenDYDNSCLI) setSynchronize(c *cli.Context) error {
 	return nil
 }
 
-func (odc *OpenDYDNSCLI) synchronize(c *cli.Context) error {
+func (odc *OpenDYDNSCLI) synchronize(_ *cli.Context) error {
 	token, err := odc.getToken()
 	if err != nil {
 		odc.logger.Err(err).Msg("error while getting JWT token.")
