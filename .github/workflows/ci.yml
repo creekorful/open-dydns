@@ -55,6 +55,9 @@ jobs:
           go generate ./...
           go test --coverprofile=coverage.coverprofile --covermode=atomic -v ./...
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+
       - name: Update go report card
         if: success() && matrix.os == 'ubuntu-latest'
         uses: creekorful/goreportcard-action@v1.0
