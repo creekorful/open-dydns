@@ -78,6 +78,9 @@ func (d *daemon) CreateUser(cred proto.CredentialsDto) (proto.UserContext, error
 	if err != nil && !errors.As(err, &gorm.ErrRecordNotFound) {
 		d.logger.Err(err).Msg("error while fetching database.")
 		return proto.UserContext{}, err
+	} else if err == nil {
+		d.logger.Warn().Msg("email address already taken.")
+		return proto.UserContext{}, ErrInvalidParameters // not 409 to prevent email discovery
 	}
 
 	// Doesn't exist yet!

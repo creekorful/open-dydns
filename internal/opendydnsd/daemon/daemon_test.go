@@ -78,6 +78,46 @@ func TestIsAliasValid(t *testing.T) {
 	}
 }
 
+func TestDaemon_CreateUser_InvalidRequest(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
+	dbMock := database.NewMockConnection(mockCtrl)
+
+	d := daemon{
+		logger: &logger,
+		conn:   dbMock,
+	}
+
+	if _, err := d.CreateUser(proto.CredentialsDto{Email: "test@gmail.com"}); err != ErrInvalidParameters {
+		t.Errorf("CreateUser() should have returned ErrInvalidParameters")
+	}
+}
+
+func TestDaemon_CreateUser_EmailTaken(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
+	dbMock := database.NewMockConnection(mockCtrl)
+
+	d := daemon{
+		logger: &logger,
+		conn:   dbMock,
+	}
+
+	dbMock.EXPECT().FindUser("lunamicard@gmail.com").Return(database.User{}, nil)
+
+	if _, err := d.CreateUser(proto.CredentialsDto{Email: "lunamicard@gmail.com", Password: "test"}); err != ErrInvalidParameters {
+		t.Error("CreateUser() should have returned ErrInvalidParameters")
+	}
+}
+
+func TestDaemon_CreateUser(t *testing.T) {
+	// TODO
+}
+
 func TestDaemon_Authenticate_InvalidRequest(t *testing.T) {
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
 	d := daemon{
