@@ -115,7 +115,30 @@ func TestDaemon_CreateUser_EmailTaken(t *testing.T) {
 }
 
 func TestDaemon_CreateUser(t *testing.T) {
-	// TODO
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
+	dbMock := database.NewMockConnection(mockCtrl)
+
+	d := daemon{
+		logger: &logger,
+		conn:   dbMock,
+	}
+
+	dbMock.EXPECT().
+		FindUser("lunamicard@gmail.com").
+		Return(database.User{}, gorm.ErrRecordNotFound)
+	dbMock.EXPECT().
+		CreateUser("lunamicard@gmail.com", gomock.Any()).
+		Return(database.User{}, nil)
+	dbMock.EXPECT().
+		FindUser("lunamicard@gmail.com").
+		Return(database.User{Password: "$2a$04$5eQwROjKESuWP2y.sAVsPeqhG48UXWw.htYp5G./JsRjWwUMOi7xC"}, nil)
+
+	if _, err := d.CreateUser(proto.CredentialsDto{Email: "lunamicard@gmail.com", Password: "test"}); err != nil {
+		t.Errorf("CreateUser() should not have failed: %s", err)
+	}
 }
 
 func TestDaemon_Authenticate_InvalidRequest(t *testing.T) {
