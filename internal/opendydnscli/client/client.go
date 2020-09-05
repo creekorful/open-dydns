@@ -71,6 +71,7 @@ func (c *Client) DeleteAlias(token proto.TokenDto, name string) error {
 	return nonNilError(err)
 }
 
+// GetDomains see proto.APIContract
 func (c *Client) GetDomains(token proto.TokenDto) ([]proto.DomainDto, error) {
 	var result []proto.DomainDto
 	var err proto.ErrorDto
