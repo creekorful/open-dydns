@@ -535,3 +535,36 @@ func TestDaemon_DeleteAlias(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestDaemon_GetDomains(t *testing.T) {
+	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
+
+	d := daemon{
+		logger: &logger,
+		config: config.DaemonConfig{
+			DNSProvisioners: []config.DNSProvisionerConfig{
+				{
+					Name:    "dummy",
+					Config:  map[string]string{},
+					Domains: []string{"bar.baz"},
+				},
+				{
+					Name:    "example",
+					Config:  map[string]string{},
+					Domains: []string{"example.org", "dydns.org"},
+				},
+			},
+		},
+	}
+
+	domains, err := d.GetDomains(proto.UserContext{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	if len(domains) != 3 {
+		t.Error("Wrong number of domains returned")
+	}
+
+	// TODO assert on domains
+}
