@@ -9,6 +9,7 @@ import (
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/crypto/ssh/terminal"
 	"os"
 )
 
@@ -42,7 +43,7 @@ func (d *OpenDyDNSD) GetApp() *cli.App {
 		Commands: []*cli.Command{
 			{
 				Name:      "create-user",
-				ArgsUsage: "<EMAIL> <PASSWORD>",
+				ArgsUsage: "<EMAIL>",
 				Usage:     "Create an user account",
 				Action:    d.createUser,
 			},
@@ -103,14 +104,16 @@ func (d *OpenDyDNSD) startDaemon(c *cli.Context) error {
 }
 
 func (d *OpenDyDNSD) createUser(c *cli.Context) error {
-	if c.Args().Len() != 2 {
-		err := fmt.Errorf("missing EMAIL USERNAME")
-		d.logger.Err(err).Msg("missing EMAIL USERNAME.")
+	if c.Args().Len() != 1 {
+		err := fmt.Errorf("missing EMAIL")
+		d.logger.Err(err).Msg("missing EMAIL.")
 		return err
 	}
 
 	email := c.Args().First()
-	pass := c.Args().Get(1)
+
+	fmt.Printf("Password: ")
+	pass, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
 
 	d.logger.Info().Str("Email", email).Msg("Creating user.")
 
@@ -122,7 +125,7 @@ func (d *OpenDyDNSD) createUser(c *cli.Context) error {
 
 	if _, err := daem.CreateUser(proto.CredentialsDto{
 		Email:    email,
-		Password: pass,
+		Password: string(pass),
 	}); err != nil {
 		d.logger.Err(err).Str("Email", email).Msg("Unable to create user account.")
 		return err
