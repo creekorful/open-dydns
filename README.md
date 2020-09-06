@@ -74,11 +74,11 @@ Below is an example of the configuration file using OVH provider:
   SigningKey = "TODO"
 
 [DaemonConfig]
-  [[DaemonConfig.DnsProvisioners]]
+  [[DaemonConfig.DnsProvisioner]]
     Domains = ["creekorful.fr"]
     Name = "ovh"
 
-    [DaemonConfig.DnsProvisioners.Config]
+    [DaemonConfig.DnsProvisioner.Config]
       app-key = "todo-app-key-here"
       app-secret = "todo-app-secret-here"
       consumer-key = "todo-consumer-key-here"
