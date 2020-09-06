@@ -43,14 +43,28 @@ func (ac APIConfig) Valid() bool {
 
 // DaemonConfig represent the daemon configuration
 type DaemonConfig struct {
-	DNSProvisioners []DNSProvisionerConfig `toml:"DnsProvisioners"`
+	DNSProvisioners []DNSProvisionerConfig `toml:"DnsProvisioner"`
 }
 
 // DNSProvisionerConfig represent the configuration of a DNS provisioner
 type DNSProvisionerConfig struct {
 	Name    string
 	Config  map[string]string
-	Domains []string
+	Domains []DomainConfig `toml:"Domain"`
+}
+
+// DomainConfig represent a domain
+type DomainConfig struct {
+	Domain string
+	Host   string
+}
+
+func (dc DomainConfig) String() string {
+	if dc.Host == "" {
+		return dc.Domain
+	}
+
+	return fmt.Sprintf("%s.%s", dc.Host, dc.Domain)
 }
 
 // Valid determinate if config is valid one

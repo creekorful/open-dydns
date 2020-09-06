@@ -131,7 +131,7 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 
 	a := newAlias(alias)
 
-	provisioner, err := d.findDNSProvisioner(a.Domain)
+	provisioner, domainConf, err := d.findDNSProvisioner(a.Domain)
 	if err != nil {
 		d.logger.Err(err).Str("Domain", a.Domain).Msg("domain is not supported.")
 		return proto.AliasDto{}, proto.ErrDomainNotFound
@@ -157,10 +157,11 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 	}
 
 	// alias available: perform registration
-	if err := provisioner.AddRecord(a.Host, a.Domain, a.Value); err != nil {
+	host, domain := getRealHostAndDomain(alias, domainConf)
+	if err := provisioner.AddRecord(host, domain, a.Value); err != nil {
 		d.logger.Err(err).
-			Str("Domain", a.Domain).
-			Str("Host", a.Host).
+			Str("Domain", domain).
+			Str("Host", host).
 			Str("Value", a.Value).
 			Msg("error while adding DNS record.")
 		return proto.AliasDto{}, err
@@ -194,16 +195,17 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 	// Update the alias
 	updateAlias(&al, alias)
 
-	provisioner, err := d.findDNSProvisioner(al.Domain)
+	provisioner, domainConf, err := d.findDNSProvisioner(al.Domain)
 	if err != nil {
 		d.logger.Err(err).Msg("error while finding DNS provisioner.")
 		return proto.AliasDto{}, err
 	}
 
-	if err := provisioner.UpdateRecord(al.Host, al.Domain, al.Value); err != nil {
+	host, domain := getRealHostAndDomain(alias, domainConf)
+	if err := provisioner.UpdateRecord(host, domain, al.Value); err != nil {
 		d.logger.Err(err).
-			Str("Domain", al.Domain).
-			Str("Host", al.Host).
+			Str("Domain", domain).
+			Str("Host", host).
 			Str("Value", al.Value).
 			Msg("error while updating DNS record.")
 		return proto.AliasDto{}, err
@@ -217,7 +219,8 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 
 	d.logger.Debug().
 		Uint("UserID", userCtx.UserID).
-		Str("Domain", alias.Domain).
+		Str("Domain", al.Domain).
+		Str("Host", al.Host).
 		Str("Value", alias.Value).
 		Msg("successfully updated alias.")
 
@@ -227,30 +230,33 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error {
 	a := newAlias(proto.AliasDto{Domain: aliasName})
 
-	provisioner, err := d.findDNSProvisioner(a.Domain)
+	provisioner, domainConf, err := d.findDNSProvisioner(a.Domain)
 	if err != nil {
 		d.logger.Err(err).Msg("error while finding DNS provisioner.")
 		return err
 	}
 
-	if err := provisioner.DeleteRecord(a.Host, a.Domain); err != nil {
+	host, domain := getRealHostAndDomain(proto.AliasDto{Domain: aliasName}, domainConf)
+	if err := provisioner.DeleteRecord(host, domain); err != nil {
 		d.logger.Err(err).
-			Str("Domain", a.Domain).
-			Str("Host", a.Host).
+			Str("Domain", domain).
+			Str("Host", host).
 			Msg("error while deleting DNS record.")
 		return err
 	}
 
 	if err := d.conn.DeleteAlias(a.Host, a.Domain, userCtx.UserID); err != nil {
 		d.logger.Warn().
-			Str("Domain", aliasName).
+			Str("Domain", a.Domain).
+			Str("Host", a.Host).
 			Msg("unable to delete alias.")
 		return err
 	}
 
 	d.logger.Debug().
 		Uint("UserID", userCtx.UserID).
-		Str("Domain", aliasName).
+		Str("Domain", a.Domain).
+		Str("Host", a.Host).
 		Msg("successfully deleted alias.")
 
 	return nil
@@ -262,7 +268,7 @@ func (d *daemon) GetDomains(_ proto.UserContext) ([]proto.DomainDto, error) {
 	for _, dnsProvisioner := range d.config.DNSProvisioners {
 		for _, domain := range dnsProvisioner.Domains {
 			domains = append(domains, proto.DomainDto{
-				Domain: domain,
+				Domain: domain.String(),
 			})
 		}
 	}
@@ -311,14 +317,17 @@ func (d *daemon) findUserAlias(alias proto.AliasDto, userID uint) (database.Alia
 	return al, nil
 }
 
-func (d *daemon) findDNSProvisioner(domain string) (dns.Provisioner, error) {
+func (d *daemon) findDNSProvisioner(domain string) (dns.Provisioner, config.DomainConfig, error) {
 	for _, dnsProvisioner := range d.config.DNSProvisioners {
-		if isInside(dnsProvisioner.Domains, domain) {
-			return d.dnsProvider.GetProvisioner(dnsProvisioner.Name, dnsProvisioner.Config)
+		for _, domainConf := range dnsProvisioner.Domains {
+			if domainConf.String() == domain {
+				p, err := d.dnsProvider.GetProvisioner(dnsProvisioner.Name, dnsProvisioner.Config)
+				return p, domainConf, err
+			}
 		}
 	}
 
-	return nil, fmt.Errorf("no DNS provisioner found for domain %s", domain)
+	return nil, config.DomainConfig{}, fmt.Errorf("no DNS provisioner found for domain %s", domain)
 }
 
 // Alias -> AliasDto
@@ -331,10 +340,10 @@ func newAliasDto(alias database.Alias) proto.AliasDto {
 
 // AliasDto -> Alias
 func newAlias(alias proto.AliasDto) database.Alias {
-	parts := strings.SplitAfterN(alias.Domain, ".", 2)
+	parts := strings.Split(alias.Domain, ".")
 	return database.Alias{
-		Host:   strings.Replace(parts[0], ".", "", 1),
-		Domain: parts[1],
+		Host:   parts[0],
+		Domain: strings.Replace(alias.Domain, parts[0]+".", "", 1),
 		Value:  alias.Value,
 	}
 }
@@ -352,11 +361,7 @@ func isAliasValid(alias proto.AliasDto) bool {
 	return alias.Domain != "" && strings.Count(alias.Domain, ".") >= 2 && alias.Value != ""
 }
 
-func isInside(slice []string, elem string) bool {
-	for _, i := range slice {
-		if i == elem {
-			return true
-		}
-	}
-	return false
+func getRealHostAndDomain(alias proto.AliasDto, domainConf config.DomainConfig) (string, string) {
+	host := strings.Replace(alias.Domain, "."+domainConf.Domain, "", 1)
+	return host, domainConf.Domain
 }
