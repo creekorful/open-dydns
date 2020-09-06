@@ -32,13 +32,21 @@ func (c Config) Valid() bool {
 
 // APIConfig represent the API configuration
 type APIConfig struct {
-	ListenAddr string
-	SigningKey string
+	ListenAddr   string
+	SigningKey   string
+	CertCacheDir string
+	Hostname     string
+	AutoTLS      bool
 }
 
 // Valid determinate if config is valid one
 func (ac APIConfig) Valid() bool {
 	return ac.ListenAddr != "" && ac.SigningKey != ""
+}
+
+// SSLEnabled determinate if SSL (HTTPS) is enabled for the API
+func (ac APIConfig) SSLEnabled() bool {
+	return ac.CertCacheDir != ""
 }
 
 // DaemonConfig represent the daemon configuration

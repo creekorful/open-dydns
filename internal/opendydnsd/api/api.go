@@ -2,18 +2,22 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/acme/autocert"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 // API represent the Daemon REST API
 type API struct {
 	e          *echo.Echo
 	signingKey []byte
+	conf       config.APIConfig
 }
 
 // NewAPI return a new API instance, wrapped around given Daemon instance
@@ -24,10 +28,20 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	e.HideBanner = false
 	e.Logger.SetOutput(ioutil.Discard)
 
+	// Determinate if should run HTTPS
+	if conf.SSLEnabled() {
+		if conf.Hostname != "" {
+			e.AutoTLSManager.HostPolicy = autocert.HostWhitelist(conf.Hostname)
+		}
+
+		e.AutoTLSManager.Cache = autocert.DirCache(conf.CertCacheDir)
+	}
+
 	// Create the API
 	a := API{
 		e:          e,
 		signingKey: []byte(conf.SigningKey),
+		conf:       conf,
 	}
 
 	// Register global middlewares
@@ -145,12 +159,36 @@ func (a *API) getDomains(d daemon.Daemon) echo.HandlerFunc {
 	}
 }
 
-// Start start the API server
+// Start the API server
 func (a *API) Start(address string) error {
+	// determinate if should run HTTPS
+	if a.conf.SSLEnabled() {
+		if a.conf.AutoTLS {
+			// need hostname in this case
+			if a.conf.Hostname == "" {
+				return fmt.Errorf("hostname should be configured")
+			}
+
+			return a.startAutoTLS(address)
+		}
+
+		return a.e.StartTLS(address, nil, nil) // TODO
+	}
+
 	return a.e.Start(address)
 }
 
 // Shutdown terminate the API server cleanly
 func (a *API) Shutdown(ctx context.Context) error {
 	return a.e.Shutdown(ctx)
+}
+
+func (a *API) startAutoTLS(address string) error {
+	// since we are using LetsEncrypt we can only use port 443
+	parts := strings.Split(address, ":")
+	if len(parts) == 2 {
+		return a.e.StartAutoTLS(parts[0] + ":443")
+	}
+
+	return a.e.StartAutoTLS(address + ":443")
 }
