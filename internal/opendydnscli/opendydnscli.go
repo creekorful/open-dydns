@@ -28,14 +28,13 @@ func NewCLI() *OpenDYDNSCLI {
 
 // App return the cli.App to execute
 func (odc *OpenDYDNSCLI) App() *cli.App {
-	return &cli.App{
+	app := &cli.App{
 		Name:    "opendydns-cli",
 		Usage:   "The OpenDyDNS CLI",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
 		Version: "0.1.0",
 		Before:  odc.before,
 		Flags: []cli.Flag{
-			common.GetLogFlag(),
 			&cli.StringFlag{
 				Name:  "config",
 				Value: "opendydns-cli.toml",
@@ -86,6 +85,12 @@ func (odc *OpenDYDNSCLI) App() *cli.App {
 			},
 		},
 	}
+
+	for _, flag := range common.GetLogFlags() {
+		app.Flags = append(app.Flags, flag)
+	}
+
+	return app
 }
 
 func (odc *OpenDYDNSCLI) before(c *cli.Context) error {
@@ -174,7 +179,7 @@ func (odc *OpenDYDNSCLI) ls(c *cli.Context) error {
 		return err
 	}
 
-	if c.Args().First() == "domains" {
+	if c.Args().First() == "domain" {
 		return odc.lsDomains(token)
 	}
 

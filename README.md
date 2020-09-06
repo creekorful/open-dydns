@@ -93,10 +93,11 @@ This command will prompt for the user password and then tries to authenticate it
 on the system.
 
 ```
-$ opendydns-cli ls
+$ opendydns-cli ls <what>
 ```
 
-This command will list the user current DyDNS aliases with linked current IP.
+This command will list the available resources.
+Possible resources: domain or alias. Default is alias.
 
 ```
 $ opendydns-cli add <alias>
@@ -125,7 +126,7 @@ $ opendydns-cli set-ip <alias> <ip>
 Override the IP value for given alias. This works with both IPv4 and Ipv6.
 
 ```
-$ opendydns-cli synch
+$ opendydns-cli sync
 ```
 
 This command will synchronize the current IP with linked / active aliases.

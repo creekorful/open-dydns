@@ -27,14 +27,13 @@ func NewDaemon() *OpenDyDNSD {
 
 // GetApp return the cli.App representing the OpenDyDNSD
 func (d *OpenDyDNSD) GetApp() *cli.App {
-	return &cli.App{
+	app := &cli.App{
 		Name:    "opendydnsd",
 		Usage:   "The OpenDyDNS(Daemon)",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
 		Version: "0.1.0",
 		Before:  d.before,
 		Flags: []cli.Flag{
-			common.GetLogFlag(),
 			&cli.StringFlag{
 				Name:  "config",
 				Value: "opendydnsd.toml",
@@ -50,6 +49,12 @@ func (d *OpenDyDNSD) GetApp() *cli.App {
 		},
 		Action: d.startDaemon,
 	}
+
+	for _, flag := range common.GetLogFlags() {
+		app.Flags = append(app.Flags, flag)
+	}
+
+	return app
 }
 
 func (d *OpenDyDNSD) before(c *cli.Context) error {
