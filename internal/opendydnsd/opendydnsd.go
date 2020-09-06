@@ -13,26 +13,26 @@ import (
 	"os"
 )
 
-// OpenDyDNSD represent a instance of the Daemon app
-type OpenDyDNSD struct {
+// DaemonApp represent a instance of the Daemon app
+type DaemonApp struct {
 	conf     config.Config
 	confPath string
 	logger   *zerolog.Logger
 }
 
-// NewDaemon return a new instance of the daemon app
-func NewDaemon() *OpenDyDNSD {
-	return &OpenDyDNSD{}
+// NewDaemonApp return a new instance of the daemon app
+func NewDaemonApp() *DaemonApp {
+	return &DaemonApp{}
 }
 
-// GetApp return the cli.App representing the OpenDyDNSD
-func (d *OpenDyDNSD) GetApp() *cli.App {
+// GetApp return the cli.App representing the DaemonApp
+func (da *DaemonApp) GetApp() *cli.App {
 	app := &cli.App{
 		Name:    "opendydnsd",
 		Usage:   "The OpenDyDNS(Daemon)",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
 		Version: "0.1.0",
-		Before:  d.before,
+		Before:  da.before,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "config",
@@ -44,10 +44,10 @@ func (d *OpenDyDNSD) GetApp() *cli.App {
 				Name:      "create-user",
 				ArgsUsage: "<EMAIL>",
 				Usage:     "Create an user account",
-				Action:    d.createUser,
+				Action:    da.createUser,
 			},
 		},
-		Action: d.startDaemon,
+		Action: da.startDaemon,
 	}
 
 	for _, flag := range common.GetLogFlags() {
@@ -57,61 +57,61 @@ func (d *OpenDyDNSD) GetApp() *cli.App {
 	return app
 }
 
-func (d *OpenDyDNSD) before(c *cli.Context) error {
+func (da *DaemonApp) before(c *cli.Context) error {
 	// Configure log level
 	logger, err := common.ConfigureLogger(c)
 	if err != nil {
 		return err
 	}
-	d.logger = &logger
+	da.logger = &logger
 
 	// Create configuration file if not exist
 	configFile := c.String("config")
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		d.logger.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
+		da.logger.Info().Str("Path", configFile).Msg("creating default config file. please edit it accordingly.")
 		if err := config.Save(config.DefaultConfig, configFile); err != nil {
 			return err
 		}
 		return fmt.Errorf("please configure the config file")
 	}
-	d.confPath = configFile
+	da.confPath = configFile
 
 	// Load the configuration file
 	conf, err := config.Load(configFile)
 	if err != nil {
 		return err
 	}
-	d.conf = conf
+	da.conf = conf
 
 	return nil
 }
 
-func (d *OpenDyDNSD) startDaemon(c *cli.Context) error {
+func (da *DaemonApp) startDaemon(c *cli.Context) error {
 	// Display version etc...
-	d.logger.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")
+	da.logger.Info().Str("Version", c.App.Version).Msg("starting DaemonApp")
 
 	// Instantiate the Daemon
-	daem, err := daemon.NewDaemon(d.conf, d.logger)
+	d, err := daemon.NewDaemon(da.conf, da.logger)
 	if err != nil {
-		d.logger.Err(err).Msg("Unable to start the daemon.")
+		da.logger.Err(err).Msg("Unable to start the daemon.")
 		return err
 	}
 
 	// Instantiate the API
-	a, err := api.NewAPI(daem, d.conf.APIConfig)
+	a, err := api.NewAPI(d, da.conf.APIConfig)
 	if err != nil {
-		d.logger.Err(err).Msg("unable to instantiate the API.")
+		da.logger.Err(err).Msg("unable to instantiate the API.")
 		return err
 	}
 
-	d.logger.Info().Str("Addr", d.conf.APIConfig.ListenAddr).Msg("OpenDyDNSD API started.")
-	return a.Start(d.conf.APIConfig.ListenAddr)
+	da.logger.Info().Str("Addr", da.conf.APIConfig.ListenAddr).Msg("DaemonApp API started.")
+	return a.Start(da.conf.APIConfig.ListenAddr)
 }
 
-func (d *OpenDyDNSD) createUser(c *cli.Context) error {
+func (da *DaemonApp) createUser(c *cli.Context) error {
 	if c.Args().Len() != 1 {
 		err := fmt.Errorf("missing EMAIL")
-		d.logger.Err(err).Msg("missing EMAIL.")
+		da.logger.Err(err).Msg("missing EMAIL.")
 		return err
 	}
 
@@ -120,23 +120,23 @@ func (d *OpenDyDNSD) createUser(c *cli.Context) error {
 	fmt.Printf("Password: ")
 	pass, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
 
-	d.logger.Info().Str("Email", email).Msg("Creating user.")
+	da.logger.Info().Str("Email", email).Msg("Creating user.")
 
-	daem, err := daemon.NewDaemon(d.conf, d.logger)
+	d, err := daemon.NewDaemon(da.conf, da.logger)
 	if err != nil {
-		d.logger.Err(err).Msg("Unable to start the daemon.")
+		da.logger.Err(err).Msg("Unable to start the daemon.")
 		return err
 	}
 
-	if _, err := daem.CreateUser(proto.CredentialsDto{
+	if _, err := d.CreateUser(proto.CredentialsDto{
 		Email:    email,
 		Password: string(pass),
 	}); err != nil {
-		d.logger.Err(err).Str("Email", email).Msg("Unable to create user account.")
+		da.logger.Err(err).Str("Email", email).Msg("Unable to create user account.")
 		return err
 	}
 
-	d.logger.Info().Str("Email", email).Msg("Successfully created user account.")
+	da.logger.Info().Str("Email", email).Msg("Successfully created user account.")
 
 	return nil
 }

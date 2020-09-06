@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := opendydnsd.NewDaemon().GetApp().Run(os.Args); err != nil {
+	if err := opendydnsd.NewDaemonApp().GetApp().Run(os.Args); err != nil {
 		os.Exit(1)
 	}
 }

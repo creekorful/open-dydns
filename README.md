@@ -101,7 +101,7 @@ This command will list the available resources.
 Possible resources: domain or alias. Default is alias.
 
 ```
-$ opendydns-cli add <alias>
+$ opendydns-cli register <alias>
 ```
 
 This command will register given alias if possible and associated with current computer.

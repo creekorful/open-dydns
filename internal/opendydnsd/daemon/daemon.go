@@ -7,27 +7,11 @@ import (
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/dns"
 	"github.com/creekorful/open-dydns/pkg/proto"
-	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"strings"
 )
-
-// ErrUserNotFound is returned when the wanted user cannot be found
-var ErrUserNotFound = echo.NewHTTPError(404, "user not found")
-
-// ErrAliasTaken is returned when the wanted alias is already taken by someone else
-var ErrAliasTaken = echo.NewHTTPError(409, "alias already taken")
-
-// ErrAliasAlreadyExist is returned when user already own the wanted alias
-var ErrAliasAlreadyExist = echo.NewHTTPError(409, "alias already exist")
-
-// ErrAliasNotFound is returned when the wanted alias cannot be found
-var ErrAliasNotFound = echo.NewHTTPError(404, "alias not found")
-
-// ErrInvalidParameters is returned when the given request is invalid
-var ErrInvalidParameters = echo.NewHTTPError(404, "invalid request parameter(s)")
 
 // Daemon represent OpenDyDNSD
 type Daemon interface {
@@ -70,7 +54,7 @@ func NewDaemon(c config.Config, logger *zerolog.Logger) (Daemon, error) {
 func (d *daemon) CreateUser(cred proto.CredentialsDto) (proto.UserContext, error) {
 	if cred.Email == "" || cred.Password == "" {
 		d.logger.Warn().Msg("invalid create user request: bad request.")
-		return proto.UserContext{}, ErrInvalidParameters
+		return proto.UserContext{}, proto.ErrInvalidParameters
 	}
 
 	// Make sure user doesn't already exist
@@ -80,7 +64,7 @@ func (d *daemon) CreateUser(cred proto.CredentialsDto) (proto.UserContext, error
 		return proto.UserContext{}, err
 	} else if err == nil {
 		d.logger.Warn().Msg("email address already taken.")
-		return proto.UserContext{}, ErrInvalidParameters // not 409 to prevent email discovery
+		return proto.UserContext{}, proto.ErrInvalidParameters // not 409 to prevent email discovery
 	}
 
 	// Doesn't exist yet!
@@ -99,12 +83,12 @@ func (d *daemon) CreateUser(cred proto.CredentialsDto) (proto.UserContext, error
 func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, error) {
 	if cred.Email == "" || cred.Password == "" {
 		d.logger.Warn().Msg("invalid authentication request: bad request.")
-		return proto.UserContext{}, ErrInvalidParameters
+		return proto.UserContext{}, proto.ErrInvalidParameters
 	}
 
 	user, err := d.conn.FindUser(cred.Email)
 	if errors.As(err, &gorm.ErrRecordNotFound) {
-		return proto.UserContext{}, ErrUserNotFound
+		return proto.UserContext{}, proto.ErrInvalidParameters // not 404 to prevent email discovery
 	}
 	if err != nil {
 		return proto.UserContext{}, err
@@ -113,7 +97,7 @@ func (d *daemon) Authenticate(cred proto.CredentialsDto) (proto.UserContext, err
 	// Validate the password
 	if !d.validatePassword(user.Password, cred.Password) {
 		d.logger.Warn().Msg("invalid authentication request: invalid password.")
-		return proto.UserContext{}, ErrUserNotFound
+		return proto.UserContext{}, proto.ErrInvalidParameters // not 404 to prevent email discovery
 	}
 
 	d.logger.Debug().Str("Email", user.Email).Msg("successfully authenticated.")
@@ -142,10 +126,17 @@ func (d *daemon) GetAliases(userCtx proto.UserContext) ([]proto.AliasDto, error)
 func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error) {
 	if !isAliasValid(alias) {
 		d.logger.Warn().Msg("invalid register alias request: bad request.")
-		return proto.AliasDto{}, ErrInvalidParameters
+		return proto.AliasDto{}, proto.ErrInvalidParameters
 	}
 
 	a := newAlias(alias)
+
+	provisioner, err := d.findDNSProvisioner(a.Domain)
+	if err != nil {
+		d.logger.Err(err).Str("Domain", a.Domain).Msg("domain is not supported.")
+		return proto.AliasDto{}, proto.ErrDomainNotFound
+	}
+
 	res, err := d.conn.FindAlias(a.Host, a.Domain)
 
 	// technical error
@@ -158,20 +149,14 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 	if err == nil {
 		if res.UserID != userCtx.UserID {
 			d.logger.Debug().Msg("alias taken.")
-			return proto.AliasDto{}, ErrAliasTaken
+			return proto.AliasDto{}, proto.ErrAliasTaken
 		}
 
 		d.logger.Debug().Msg("alias already exist.")
-		return proto.AliasDto{}, ErrAliasAlreadyExist
+		return proto.AliasDto{}, proto.ErrAliasAlreadyExist
 	}
 
 	// alias available: perform registration
-	provisioner, err := d.findDNSProvisioner(a.Domain)
-	if err != nil {
-		d.logger.Err(err).Msg("error while finding DNS provisioner.")
-		return proto.AliasDto{}, err
-	}
-
 	if err := provisioner.AddRecord(a.Host, a.Domain, a.Value); err != nil {
 		d.logger.Err(err).
 			Str("Domain", a.Domain).
@@ -193,7 +178,7 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (proto.AliasDto, error) {
 	if !isAliasValid(alias) {
 		d.logger.Warn().Msg("invalid update alias request: bad request.")
-		return proto.AliasDto{}, ErrInvalidParameters
+		return proto.AliasDto{}, proto.ErrInvalidParameters
 	}
 
 	al, err := d.findUserAlias(alias, userCtx.UserID)
@@ -299,14 +284,14 @@ func (d *daemon) findUserAlias(alias proto.AliasDto, userID uint) (database.Alia
 	al, err := d.conn.FindAlias(a.Host, a.Domain)
 	if err != nil {
 		if errors.As(err, &gorm.ErrRecordNotFound) {
-			return database.Alias{}, ErrAliasNotFound
+			return database.Alias{}, proto.ErrAliasNotFound
 		}
 
 		return database.Alias{}, err
 	}
 
 	if al.UserID != userID {
-		return database.Alias{}, ErrAliasNotFound
+		return database.Alias{}, proto.ErrAliasNotFound
 	}
 
 	return al, nil

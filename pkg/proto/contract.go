@@ -1,5 +1,24 @@
 package proto
 
+import "github.com/labstack/echo/v4"
+
+//go:generate mockgen -source contract.go -destination=./contract_mock.go -package=proto
+
+// ErrAliasTaken is returned when the wanted alias is already taken by someone else
+var ErrAliasTaken = echo.NewHTTPError(409, "alias already taken")
+
+// ErrAliasAlreadyExist is returned when user already own the wanted alias
+var ErrAliasAlreadyExist = echo.NewHTTPError(409, "alias already exist")
+
+// ErrAliasNotFound is returned when the wanted alias cannot be found
+var ErrAliasNotFound = echo.NewHTTPError(404, "alias not found")
+
+// ErrInvalidParameters is returned when the given request is invalid
+var ErrInvalidParameters = echo.NewHTTPError(400, "invalid request parameter(s)")
+
+// ErrDomainNotFound is returned when the alias to register use non supported / not existing domain
+var ErrDomainNotFound = echo.NewHTTPError(404, "requested domain not found")
+
 // APIContract defined the API served by the Daemon
 type APIContract interface {
 	// Authenticate user using given credential

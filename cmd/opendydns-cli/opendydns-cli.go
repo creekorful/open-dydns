@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if err := opendydnscli.NewCLI().App().Run(os.Args); err != nil {
+	if err := opendydnscli.NewCLIApp().App().Run(os.Args); err != nil {
 		os.Exit(1)
 	}
 }

@@ -90,7 +90,7 @@ func TestDaemon_CreateUser_InvalidRequest(t *testing.T) {
 		conn:   dbMock,
 	}
 
-	if _, err := d.CreateUser(proto.CredentialsDto{Email: "test@gmail.com"}); err != ErrInvalidParameters {
+	if _, err := d.CreateUser(proto.CredentialsDto{Email: "test@gmail.com"}); err != proto.ErrInvalidParameters {
 		t.Errorf("CreateUser() should have returned ErrInvalidParameters")
 	}
 }
@@ -109,7 +109,7 @@ func TestDaemon_CreateUser_EmailTaken(t *testing.T) {
 
 	dbMock.EXPECT().FindUser("lunamicard@gmail.com").Return(database.User{}, nil)
 
-	if _, err := d.CreateUser(proto.CredentialsDto{Email: "lunamicard@gmail.com", Password: "test"}); err != ErrInvalidParameters {
+	if _, err := d.CreateUser(proto.CredentialsDto{Email: "lunamicard@gmail.com", Password: "test"}); err != proto.ErrInvalidParameters {
 		t.Error("CreateUser() should have returned ErrInvalidParameters")
 	}
 }
@@ -148,7 +148,7 @@ func TestDaemon_Authenticate_InvalidRequest(t *testing.T) {
 	}
 
 	_, err := d.Authenticate(proto.CredentialsDto{})
-	if !errors.As(err, &ErrInvalidParameters) {
+	if !errors.As(err, &proto.ErrInvalidParameters) {
 		t.Error("Authenticate() should have failed")
 	}
 }
@@ -170,8 +170,8 @@ func TestDaemon_Authenticate_NonExistingUser(t *testing.T) {
 		Return(database.User{}, gorm.ErrRecordNotFound)
 
 	_, err := d.Authenticate(proto.CredentialsDto{Email: "lunamicard@gmail.com", Password: "test"})
-	if !errors.As(err, &ErrUserNotFound) {
-		t.Error("Authenticate() should have returned ErrUserNotFound")
+	if !errors.As(err, &proto.ErrInvalidParameters) {
+		t.Error("Authenticate() should have returned ErrInvalidParameters")
 	}
 }
 
@@ -197,8 +197,8 @@ func TestDaemon_Authenticate_InvalidPassword(t *testing.T) {
 		Return(database.User{Email: "lunamicard@gmail.com", Password: pass}, nil)
 
 	_, err = d.Authenticate(proto.CredentialsDto{Email: "lunamicard@gmail.com", Password: "testa"})
-	if !errors.As(err, &ErrUserNotFound) {
-		t.Error("Authenticate() should have returned ErrUserNotFound")
+	if !errors.As(err, &proto.ErrInvalidParameters) {
+		t.Error("Authenticate() should have returned ErrInvalidParameters")
 	}
 }
 
@@ -282,12 +282,12 @@ func TestDaemon_RegisterAlias_InvalidRequest(t *testing.T) {
 	}
 
 	_, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{})
-	if !errors.As(err, &ErrInvalidParameters) {
+	if !errors.As(err, &proto.ErrInvalidParameters) {
 		t.Error("RegisterAlias() should have returned ErrInvalidParameters")
 	}
 
 	_, err = d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "test", Value: "8.8.8.8"})
-	if !errors.As(err, &ErrInvalidParameters) {
+	if !errors.As(err, &proto.ErrInvalidParameters) {
 		t.Error("RegisterAlias() should have returned ErrInvalidParameters")
 	}
 }
@@ -298,23 +298,36 @@ func TestDaemon_RegisterAlias_AliasTaken(t *testing.T) {
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
 	dbMock := database.NewMockConnection(mockCtrl)
+	providerMock := dns.NewMockProvider(mockCtrl)
 
 	d := daemon{
-		logger: &logger,
-		conn:   dbMock,
+		logger:      &logger,
+		conn:        dbMock,
+		dnsProvider: providerMock,
+		config: config.DaemonConfig{
+			DNSProvisioners: []config.DNSProvisionerConfig{
+				{
+					Name:    "dummy",
+					Config:  map[string]string{},
+					Domains: []string{"creekorful.fr"},
+				},
+			},
+		},
 	}
 
-	dbMock.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
-		Domain: "creekorful.de",
+	providerMock.EXPECT().GetProvisioner("dummy", map[string]string{}).Return(nil, nil)
+
+	dbMock.EXPECT().FindAlias("www", "creekorful.fr").Return(database.Alias{
+		Domain: "creekorful.fr",
 		Host:   "www",
 		UserID: 12,
 	}, nil)
 
 	_, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{
-		Domain: "www.creekorful.de", Value: "127.0.0.1",
+		Domain: "www.creekorful.fr", Value: "127.0.0.1",
 	})
 
-	if !errors.As(err, &ErrAliasTaken) {
+	if !errors.As(err, &proto.ErrAliasTaken) {
 		t.Error("RegisterAlias() should have returned ErrAliasTaken")
 	}
 }
@@ -325,23 +338,36 @@ func TestDaemon_RegisterAlias_AliasAlreadyExist(t *testing.T) {
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
 	dbMock := database.NewMockConnection(mockCtrl)
+	providerMock := dns.NewMockProvider(mockCtrl)
 
 	d := daemon{
-		logger: &logger,
-		conn:   dbMock,
+		logger:      &logger,
+		conn:        dbMock,
+		dnsProvider: providerMock,
+		config: config.DaemonConfig{
+			DNSProvisioners: []config.DNSProvisionerConfig{
+				{
+					Name:    "dummy",
+					Config:  map[string]string{},
+					Domains: []string{"example.org"},
+				},
+			},
+		},
 	}
 
-	dbMock.EXPECT().FindAlias("www", "creekorful.de").Return(database.Alias{
-		Domain: "creekorful.de",
+	providerMock.EXPECT().GetProvisioner("dummy", map[string]string{}).Return(nil, nil)
+
+	dbMock.EXPECT().FindAlias("www", "example.org").Return(database.Alias{
+		Domain: "example.org",
 		Host:   "www",
 		UserID: 1,
 	}, nil)
 
 	_, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{
-		Domain: "www.creekorful.de", Value: "127.0.0.1",
+		Domain: "www.example.org", Value: "127.0.0.1",
 	})
 
-	if !errors.As(err, &ErrAliasAlreadyExist) {
+	if !errors.As(err, &proto.ErrAliasAlreadyExist) {
 		t.Error("RegisterAlias() should have returned ErrAliasAlreadyExist")
 	}
 }
@@ -413,7 +439,7 @@ func TestDaemon_UpdateAlias_InvalidAlias(t *testing.T) {
 	}
 
 	_, err := d.UpdateAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "bar.baz", Value: "127.0.0.1"})
-	if err != ErrInvalidParameters {
+	if err != proto.ErrInvalidParameters {
 		t.Error("UpdateAlias() should have returned ErrInvalidParameters")
 	}
 }
@@ -435,7 +461,7 @@ func TestDaemon_UpdateAlias_AliasDoesNotExist(t *testing.T) {
 		Return(database.Alias{}, gorm.ErrRecordNotFound)
 
 	_, err := d.UpdateAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "foo.bar.baz", Value: "127.0.0.1"})
-	if err != ErrAliasNotFound {
+	if err != proto.ErrAliasNotFound {
 		t.Error("UpdateAlias() should have returned ErrAliasNotFound")
 	}
 }
@@ -459,7 +485,7 @@ func TestDaemon_UpdateAlias_AliasNotOwned(t *testing.T) {
 		}, nil)
 
 	_, err := d.UpdateAlias(proto.UserContext{UserID: 1}, proto.AliasDto{Domain: "foo.bar.baz", Value: "127.0.0.1"})
-	if err != ErrAliasNotFound {
+	if err != proto.ErrAliasNotFound {
 		t.Error("UpdateAlias() should have returned ErrAliasNotFound")
 	}
 }
