@@ -30,10 +30,7 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 
 	// Determinate if should run HTTPS
 	if conf.SSLEnabled() {
-		if conf.Hostname != "" {
-			e.AutoTLSManager.HostPolicy = autocert.HostWhitelist(conf.Hostname)
-		}
-
+		e.AutoTLSManager.HostPolicy = autocert.HostWhitelist(conf.Hostname)
 		e.AutoTLSManager.Cache = autocert.DirCache(conf.CertCacheDir)
 	}
 
@@ -164,15 +161,13 @@ func (a *API) Start(address string) error {
 	// determinate if should run HTTPS
 	if a.conf.SSLEnabled() {
 		if a.conf.AutoTLS {
-			// need hostname in this case
-			if a.conf.Hostname == "" {
-				return fmt.Errorf("hostname should be configured")
-			}
-
 			return a.startAutoTLS(address)
 		}
 
-		return a.e.StartTLS(address, nil, nil) // TODO
+		// TODO configure file
+		return a.e.StartTLS(address,
+			fmt.Sprintf("%s/%s", a.conf.CertCacheDir, a.conf.Hostname),
+			fmt.Sprintf("%s/acme_account+key", a.conf.CertCacheDir))
 	}
 
 	return a.e.Start(address)

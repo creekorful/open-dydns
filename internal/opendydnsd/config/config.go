@@ -46,7 +46,7 @@ func (ac APIConfig) Valid() bool {
 
 // SSLEnabled determinate if SSL (HTTPS) is enabled for the API
 func (ac APIConfig) SSLEnabled() bool {
-	return ac.CertCacheDir != ""
+	return ac.CertCacheDir != "" && ac.Hostname != ""
 }
 
 // DaemonConfig represent the daemon configuration
