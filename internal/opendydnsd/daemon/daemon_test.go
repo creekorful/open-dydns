@@ -62,6 +62,43 @@ func TestNewAlias(t *testing.T) {
 	}
 }
 
+func TestNewAlias_WithSubDomain(t *testing.T) {
+	alias := newAlias(proto.AliasDto{
+		Domain: "demo.foo.bar.baz",
+		Value:  "value",
+	})
+
+	if alias.Domain != "foo.bar.baz" {
+		t.FailNow()
+	}
+	if alias.Host != "demo" {
+		t.FailNow()
+	}
+	if alias.Value != "value" {
+		t.FailNow()
+	}
+}
+
+func TestGetRealHostAndDomain(t *testing.T) {
+	host, domain := getRealHostAndDomain(proto.AliasDto{Domain: "foo.bar.baz"}, config.DomainConfig{Domain: "bar.baz"})
+	if host != "foo" {
+		t.Errorf("wrong host: %s", host)
+	}
+	if domain != "bar.baz" {
+		t.Errorf("wrong domain: %s", domain)
+	}
+}
+
+func TestGetRealHostAndDomain_WithSubDomain(t *testing.T) {
+	host, domain := getRealHostAndDomain(proto.AliasDto{Domain: "test.foo.bar.baz"}, config.DomainConfig{Domain: "bar.baz", Host: "foo"})
+	if host != "test.foo" {
+		t.Errorf("wrong host: %s", host)
+	}
+	if domain != "bar.baz" {
+		t.Errorf("wrong domain: %s", domain)
+	}
+}
+
 func TestIsAliasValid(t *testing.T) {
 	if isAliasValid(proto.AliasDto{
 		Domain: "foo",
@@ -309,7 +346,7 @@ func TestDaemon_RegisterAlias_AliasTaken(t *testing.T) {
 				{
 					Name:    "dummy",
 					Config:  map[string]string{},
-					Domains: []string{"creekorful.fr"},
+					Domains: []config.DomainConfig{{Domain: "creekorful.fr"}},
 				},
 			},
 		},
@@ -349,7 +386,7 @@ func TestDaemon_RegisterAlias_AliasAlreadyExist(t *testing.T) {
 				{
 					Name:    "dummy",
 					Config:  map[string]string{},
-					Domains: []string{"example.org"},
+					Domains: []config.DomainConfig{{Domain: "example.org"}},
 				},
 			},
 		},
@@ -389,7 +426,7 @@ func TestDaemon_RegisterAlias(t *testing.T) {
 				{
 					Name:    "dummy",
 					Config:  map[string]string{},
-					Domains: []string{"creekorful.de"},
+					Domains: []config.DomainConfig{{Host: "demo", Domain: "dydns.org"}},
 				},
 			},
 		},
@@ -397,31 +434,31 @@ func TestDaemon_RegisterAlias(t *testing.T) {
 	}
 
 	dbMock.EXPECT().
-		FindAlias("www", "creekorful.de").
+		FindAlias("test", "demo.dydns.org").
 		Return(database.Alias{}, gorm.ErrRecordNotFound)
 
 	providerMock.EXPECT().GetProvisioner("dummy", map[string]string{}).Return(provisionerMock, nil)
-	provisionerMock.EXPECT().AddRecord("www", "creekorful.de", "127.0.0.1").Return(nil)
+	provisionerMock.EXPECT().AddRecord("test.demo", "dydns.org", "127.0.0.1").Return(nil)
 
 	dbMock.EXPECT().
-		CreateAlias(database.Alias{Domain: "creekorful.de", Host: "www", Value: "127.0.0.1"}, uint(1)).
+		CreateAlias(database.Alias{Domain: "demo.dydns.org", Host: "test", Value: "127.0.0.1"}, uint(1)).
 		Return(database.Alias{
 			Model:  gorm.Model{ID: 12},
-			Domain: "creekorful.de",
-			Host:   "www",
+			Domain: "demo.dydns.org",
+			Host:   "test",
 			Value:  "127.0.0.1",
 			UserID: 1,
 		}, nil)
 
 	r, err := d.RegisterAlias(proto.UserContext{UserID: 1}, proto.AliasDto{
-		Domain: "www.creekorful.de", Value: "127.0.0.1",
+		Domain: "test.demo.dydns.org", Value: "127.0.0.1",
 	})
 
 	if err != nil {
 		t.Error(err)
 	}
 
-	if r.Domain != "www.creekorful.de" || r.Value != "127.0.0.1" {
+	if r.Domain != "test.demo.dydns.org" || r.Value != "127.0.0.1" {
 		t.Error("Wrong alias created")
 	}
 }
@@ -507,7 +544,7 @@ func TestDaemon_UpdateAlias(t *testing.T) {
 				{
 					Name:    "dummy",
 					Config:  map[string]string{},
-					Domains: []string{"bar.baz"},
+					Domains: []config.DomainConfig{{Domain: "bar.baz"}},
 				},
 			},
 		},
@@ -568,7 +605,7 @@ func TestDaemon_DeleteAlias(t *testing.T) {
 				{
 					Name:    "dummy",
 					Config:  map[string]string{},
-					Domains: []string{"creekorful.be"},
+					Domains: []config.DomainConfig{{Domain: "creekorful.be"}},
 				},
 			},
 		},
@@ -595,12 +632,15 @@ func TestDaemon_GetDomains(t *testing.T) {
 				{
 					Name:    "dummy",
 					Config:  map[string]string{},
-					Domains: []string{"bar.baz"},
+					Domains: []config.DomainConfig{{Domain: "bar.baz"}},
 				},
 				{
-					Name:    "example",
-					Config:  map[string]string{},
-					Domains: []string{"example.org", "dydns.org"},
+					Name:   "example",
+					Config: map[string]string{},
+					Domains: []config.DomainConfig{
+						{Domain: "example.org"},
+						{Domain: "dydns.org"},
+					},
 				},
 			},
 		},

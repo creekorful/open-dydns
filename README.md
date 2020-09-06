@@ -74,15 +74,22 @@ Below is an example of the configuration file using OVH provider:
   SigningKey = "TODO"
 
 [DaemonConfig]
-  [[DaemonConfig.DnsProvisioners]]
-    Domains = ["creekorful.fr"]
+  [[DaemonConfig.DnsProvisioner]]
     Name = "ovh"
 
-    [DaemonConfig.DnsProvisioners.Config]
+    [DaemonConfig.DnsProvisioner.Config]
       app-key = "todo-app-key-here"
       app-secret = "todo-app-secret-here"
       consumer-key = "todo-consumer-key-here"
       endpoint = "ovh-eu"
+
+    [[DaemonConfig.DnsProvisioner.Domain]]
+      Domain = "dydns.org"
+      Host = "demo"
+
+    [[DaemonConfig.DnsProvisioner.Domain]]
+      Domain = "creekorful.fr"
+      Host = ""
 
 [DatabaseConfig]
   DSN = "test.db"
