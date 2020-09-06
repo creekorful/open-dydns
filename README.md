@@ -86,49 +86,49 @@ Each time the CLI is installed on a computer, a new access token must be registe
 
 ### Commands
 
-```
-$ opendydns-cli login <email>
-```
-
 This command will prompt for the user password and then tries to authenticate it and save the JWT token
 on the system.
 
 ```
-$ opendydns-cli ls <what>
+$ opendydns-cli login <email>
 ```
 
 This command will list the available resources.
 Possible resources: domain or alias. Default is alias.
 
 ```
-$ opendydns-cli register <alias>
+$ opendydns-cli ls <what>
 ```
 
 This command will register given alias if possible and associated with current computer.
 This will also enable the alias for given computer and synchronize the IP.
 
 ```
+$ opendydns-cli register <alias>
+```
+
+This command will delete given alias (will be available for others to register).
+
+```
 $ opendydns-cli rm <alias>
-```
-
-This command will delete given alias (marking it available for others).
-
-```
-$ opendydns-cli set-synchronize <alias> <true/false>
 ```
 
 Enable IP synchronization for this alias.
 Please note that by default synchronization is disable, to prevent any service disruption when adding a new computer.
 
 ```
-$ opendydns-cli set-ip <alias> <ip>
+$ opendydns-cli set-synchronize <alias> <true/false>
 ```
 
 Override the IP value for given alias. This works with both IPv4 and Ipv6.
 
 ```
-$ opendydns-cli sync
+$ opendydns-cli set-ip <alias> <ip>
 ```
 
 This command will synchronize the current IP with linked / active aliases.
 This is generally run by a Cron job.
+
+```
+$ opendydns-cli sync
+```
