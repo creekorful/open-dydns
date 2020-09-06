@@ -170,7 +170,12 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 	if err != nil {
 		return proto.AliasDto{}, err
 	}
-	d.logger.Debug().Str("Domain", a.Domain).Msg("new alias created.")
+	d.logger.Debug().
+		Uint("UserID", userCtx.UserID).
+		Str("Domain", a.Domain).
+		Str("Host", a.Host).
+		Str("Value", a.Value).
+		Msg("new alias created.")
 
 	return newAliasDto(a), nil
 }
@@ -210,7 +215,11 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 		return proto.AliasDto{}, err
 	}
 
-	d.logger.Debug().Str("Domain", alias.Domain).Str("Value", alias.Value).Msg("successfully updated alias.")
+	d.logger.Debug().
+		Uint("UserID", userCtx.UserID).
+		Str("Domain", alias.Domain).
+		Str("Value", alias.Value).
+		Msg("successfully updated alias.")
 
 	return newAliasDto(al), err
 }
@@ -233,11 +242,16 @@ func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error 
 	}
 
 	if err := d.conn.DeleteAlias(a.Host, a.Domain, userCtx.UserID); err != nil {
-		d.logger.Warn().Str("Domain", aliasName).Uint("UserID", userCtx.UserID).Msg("unable to delete alias.")
+		d.logger.Warn().
+			Str("Domain", aliasName).
+			Msg("unable to delete alias.")
 		return err
 	}
 
-	d.logger.Debug().Str("Domain", aliasName).Uint("UserID", userCtx.UserID).Msg("successfully deleted alias.")
+	d.logger.Debug().
+		Uint("UserID", userCtx.UserID).
+		Str("Domain", aliasName).
+		Msg("successfully deleted alias.")
 
 	return nil
 }
