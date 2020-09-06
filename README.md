@@ -7,6 +7,8 @@ Open DyDNS is a free & open source DyDNS service.
 It allows users to create their own DyDNS services with custom domains and provide access
 to them trough a secure, authenticated API.
 
+A demo version of the service will soon be running on `demo.opendydns.org` for users to try it out. 
+
 Open DyDNS is built upon two components:
 
 ## opendydnsd
