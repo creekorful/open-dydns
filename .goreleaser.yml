@@ -1,0 +1,33 @@
+before:
+  hooks:
+    - go mod download
+builds:
+  - id: opendydnsd
+    main: ./cmd/opendydnsd/opendydnsd.go
+    binary: opendydnsd
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+  - id: opendydnsd
+    main: ./cmd/opendydns-cli/opendydns-cli.go
+    binary: opendydns-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-{{ .ShortCommit }}"
+release:
+  # If set to true, will not auto-publish the release.
+  # Default is false.
+  draft: true
+
+  # If set to auto, will mark the release as not ready for production
+  prerelease: true
