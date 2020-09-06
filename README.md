@@ -75,7 +75,6 @@ Below is an example of the configuration file using OVH provider:
 
 [DaemonConfig]
   [[DaemonConfig.DnsProvisioner]]
-    Domains = ["creekorful.fr"]
     Name = "ovh"
 
     [DaemonConfig.DnsProvisioner.Config]
@@ -83,6 +82,14 @@ Below is an example of the configuration file using OVH provider:
       app-secret = "todo-app-secret-here"
       consumer-key = "todo-consumer-key-here"
       endpoint = "ovh-eu"
+
+    [[DaemonConfig.DnsProvisioner.Domain]]
+      Domain = "dydns.org"
+      Host = "demo"
+
+    [[DaemonConfig.DnsProvisioner.Domain]]
+      Domain = "creekorful.fr"
+      Host = ""
 
 [DatabaseConfig]
   DSN = "test.db"
