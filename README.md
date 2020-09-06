@@ -1,9 +1,10 @@
 # open-dydns
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/creekorful/open-dydns)](https://goreportcard.com/report/github.com/creekorful/open-dydns)
+[![codecov](https://codecov.io/gh/creekorful/open-dydns/branch/master/graph/badge.svg)](https://codecov.io/gh/creekorful/open-dydns)
 
 Open DyDNS is a free & open source DyDNS service.
-It allows users to create their DyDNS services with their own domains and provide access
+It allows users to create their own DyDNS services with custom domains and provide access
 to them trough a secure, authenticated API.
 
 Open DyDNS is built upon two components:

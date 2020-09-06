@@ -99,7 +99,6 @@ func (odc *OpenDYDNSCLI) before(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	odc.logger = &logger
 
 	// Create configuration file if not exist
