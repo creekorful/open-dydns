@@ -88,7 +88,7 @@ func (da *DaemonApp) before(c *cli.Context) error {
 
 func (da *DaemonApp) startDaemon(c *cli.Context) error {
 	// Display version etc...
-	da.logger.Info().Str("Version", c.App.Version).Msg("starting DaemonApp")
+	da.logger.Info().Str("Version", c.App.Version).Msg("starting OpenDyDNSD")
 
 	// Instantiate the Daemon
 	d, err := daemon.NewDaemon(da.conf, da.logger)
@@ -104,7 +104,7 @@ func (da *DaemonApp) startDaemon(c *cli.Context) error {
 		return err
 	}
 
-	da.logger.Info().Str("Addr", da.conf.APIConfig.ListenAddr).Msg("DaemonApp API started.")
+	da.logger.Info().Str("Addr", da.conf.APIConfig.ListenAddr).Msg("OpenDyDNSD API started.")
 	return a.Start(da.conf.APIConfig.ListenAddr)
 }
 

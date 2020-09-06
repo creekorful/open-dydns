@@ -64,14 +64,23 @@ type DomainDto struct {
 
 ### The configuration file
 
-Below is an example of the configuration file:
+Below is an example of the configuration file using OVH provider:
 
 ```toml
 [ApiConfig]
   ListenAddr = "127.0.0.1:8888"
-  SigningKey = "TEST"
+  SigningKey = "TODO"
 
 [DaemonConfig]
+  [[DaemonConfig.DnsProvisioners]]
+    Domains = ["creekorful.fr"]
+    Name = "ovh"
+
+    [DaemonConfig.DnsProvisioners.Config]
+      app-key = "todo-app-key-here"
+      app-secret = "todo-app-secret-here"
+      consumer-key = "todo-consumer-key-here"
+      endpoint = "ovh-eu"
 
 [DatabaseConfig]
   DSN = "test.db"

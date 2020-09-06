@@ -82,5 +82,5 @@ func (e ErrorDto) Error() string {
 // UserContext represent the JWT token payload
 // and identify the logged in user in secured endpoints
 type UserContext struct {
-	UserID uint `json:"UserID"`
+	UserID uint
 }
