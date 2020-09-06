@@ -28,5 +28,20 @@ func NewProvider() Provider {
 
 // GetProvisioner return the appropriate Provisioner based on his name
 func (p *provider) GetProvisioner(name string, config map[string]string) (Provisioner, error) {
-	return nil, fmt.Errorf("not implemented")
+	switch name {
+	case ovhProvisionerName:
+		return newOVHProvisioner(config)
+	default:
+		return nil, fmt.Errorf("no provisioner named %s found", name)
+	}
+}
+
+func getConfigOrFail(config map[string]string, name string) (string, error) {
+	val := ""
+	if v, exist := config[name]; exist {
+		val = v
+	} else {
+		return "", fmt.Errorf("missing config `%s`", name)
+	}
+	return val, nil
 }

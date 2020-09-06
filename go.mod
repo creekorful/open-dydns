@@ -8,6 +8,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/labstack/echo/v4 v4.1.17
 	github.com/mattn/go-sqlite3 v1.14.2 // indirect
+	github.com/ovh/go-ovh v1.1.0
 	github.com/pelletier/go-toml v1.8.0
 	github.com/rs/zerolog v1.19.0
 	github.com/urfave/cli/v2 v2.2.0
