@@ -173,7 +173,7 @@ func (d *daemon) RegisterAlias(userCtx proto.UserContext, alias proto.AliasDto) 
 	if err != nil {
 		return proto.AliasDto{}, err
 	}
-	d.logger.Debug().
+	d.logger.Info().
 		Uint("UserID", userCtx.UserID).
 		Str("Domain", a.Domain).
 		Str("Host", a.Host).
@@ -219,7 +219,7 @@ func (d *daemon) UpdateAlias(userCtx proto.UserContext, alias proto.AliasDto) (p
 		return proto.AliasDto{}, err
 	}
 
-	d.logger.Debug().
+	d.logger.Info().
 		Uint("UserID", userCtx.UserID).
 		Str("Domain", al.Domain).
 		Str("Host", al.Host).
@@ -255,7 +255,7 @@ func (d *daemon) DeleteAlias(userCtx proto.UserContext, aliasName string) error 
 		return err
 	}
 
-	d.logger.Debug().
+	d.logger.Info().
 		Uint("UserID", userCtx.UserID).
 		Str("Domain", a.Domain).
 		Str("Host", a.Host).
