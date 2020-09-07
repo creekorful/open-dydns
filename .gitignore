@@ -1,6 +1,6 @@
 .idea
 test.db
 opendydnsd.toml
-opendydns-cli.toml
+opendydnsctl.toml
 **/**_mock.go
 coverage.coverprofile
