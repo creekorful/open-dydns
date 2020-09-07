@@ -5,14 +5,17 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"time"
 )
 
+// getAuthMiddleware instantiate a authentication middleware
 func getAuthMiddleware(signingKey []byte) echo.MiddlewareFunc {
 	return middleware.JWTWithConfig(middleware.JWTConfig{
 		SigningKey: signingKey,
 	})
 }
 
+// getUserContext extract the user context from current request
 func getUserContext(c echo.Context) proto.UserContext {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
@@ -22,12 +25,17 @@ func getUserContext(c echo.Context) proto.UserContext {
 	}
 }
 
-func makeToken(userCtx proto.UserContext, secretKey []byte) (proto.TokenDto, error) {
+// makeToken create & signed a new JWT token
+func makeToken(userCtx proto.UserContext, secretKey []byte, tokenTTL time.Duration) (proto.TokenDto, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	// Set claims
 	claims := token.Claims.(jwt.MapClaims)
 	claims["userID"] = userCtx.UserID
+
+	if tokenTTL != 0 {
+		claims["exp"] = time.Now().Add(tokenTTL).Unix()
+	}
 
 	// Generate encoded token and send it as response.
 	t, err := token.SignedString(secretKey)

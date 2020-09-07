@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/common"
+	"time"
 )
 
 // DefaultConfig is the OpenDyDNSD default configuration
@@ -34,6 +35,7 @@ func (c Config) Valid() bool {
 type APIConfig struct {
 	ListenAddr string
 	SigningKey string
+	TokenTTL   time.Duration
 }
 
 // Valid determinate if config is valid one

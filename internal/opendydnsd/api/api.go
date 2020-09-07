@@ -8,12 +8,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 // API represent the Daemon REST API
 type API struct {
 	e          *echo.Echo
 	signingKey []byte
+	tokenTTL   time.Duration
 }
 
 // NewAPI return a new API instance, wrapped around given Daemon instance
@@ -28,6 +30,7 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	a := API{
 		e:          e,
 		signingKey: []byte(conf.SigningKey),
+		tokenTTL:   conf.TokenTTL,
 	}
 
 	// Register global middlewares
@@ -60,7 +63,7 @@ func (a *API) authenticate(d daemon.Daemon) echo.HandlerFunc {
 		}
 
 		// Create the JWT token
-		token, err := makeToken(userCtx, a.signingKey)
+		token, err := makeToken(userCtx, a.signingKey, a.tokenTTL)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
