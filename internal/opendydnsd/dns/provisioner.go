@@ -2,7 +2,7 @@ package dns
 
 import "fmt"
 
-//go:generate mockgen -source provisioner.go -destination=./provisioner_mock.go -package=dns
+//go:generate mockgen -source provisioner.go -destination=../dns_mock/provisioner_mock.go -package=dns_mock
 
 // Provisioner represent a DNS provisioner
 // i.e used to abstract different DNS provisioner API solutions

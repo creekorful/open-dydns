@@ -17,7 +17,7 @@ func TestMakeToken(t *testing.T) {
 }
 
 func encodeToken(t *testing.T, userID uint, ttl time.Duration) proto.UserContext {
-	token, err := makeToken(proto.UserContext{UserID: userID}, []byte("test"), ttl)
+	token, err := makeToken(proto.UserContext{UserID: userID}, "test", ttl)
 	if err != nil {
 		t.Error(err)
 	}

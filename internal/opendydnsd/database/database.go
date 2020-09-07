@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate mockgen -source database.go -destination=./database_mock.go -package=database
+//go:generate mockgen -source database.go -destination=../database_mock/database_mock.go -package=database_mock
 
 // User is the mapping of an user
 type User struct {

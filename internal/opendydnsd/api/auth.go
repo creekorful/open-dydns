@@ -9,9 +9,9 @@ import (
 )
 
 // getAuthMiddleware instantiate a authentication middleware
-func getAuthMiddleware(signingKey []byte) echo.MiddlewareFunc {
+func getAuthMiddleware(signingKey string) echo.MiddlewareFunc {
 	return middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey: signingKey,
+		SigningKey: []byte(signingKey),
 	})
 }
 
@@ -26,7 +26,7 @@ func getUserContext(c echo.Context) proto.UserContext {
 }
 
 // makeToken create & signed a new JWT token
-func makeToken(userCtx proto.UserContext, secretKey []byte, tokenTTL time.Duration) (proto.TokenDto, error) {
+func makeToken(userCtx proto.UserContext, secretKey string, tokenTTL time.Duration) (proto.TokenDto, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	// Set claims
@@ -38,7 +38,7 @@ func makeToken(userCtx proto.UserContext, secretKey []byte, tokenTTL time.Durati
 	}
 
 	// Generate encoded token and send it as response.
-	t, err := token.SignedString(secretKey)
+	t, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return proto.TokenDto{}, err
 	}

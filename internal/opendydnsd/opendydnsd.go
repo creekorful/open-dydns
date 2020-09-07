@@ -93,7 +93,7 @@ func (da *DaemonApp) startDaemon(c *cli.Context) error {
 	// Instantiate the Daemon
 	d, err := daemon.NewDaemon(da.conf, da.logger)
 	if err != nil {
-		da.logger.Err(err).Msg("Unable to start the daemon.")
+		da.logger.Err(err).Msg("unable to start the daemon.")
 		return err
 	}
 
@@ -120,11 +120,11 @@ func (da *DaemonApp) createUser(c *cli.Context) error {
 	fmt.Printf("Password: ")
 	pass, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
 
-	da.logger.Info().Str("Email", email).Msg("Creating user.")
+	da.logger.Info().Str("Email", email).Msg("creating user.")
 
 	d, err := daemon.NewDaemon(da.conf, da.logger)
 	if err != nil {
-		da.logger.Err(err).Msg("Unable to start the daemon.")
+		da.logger.Err(err).Msg("unable to start the daemon.")
 		return err
 	}
 
@@ -132,11 +132,11 @@ func (da *DaemonApp) createUser(c *cli.Context) error {
 		Email:    email,
 		Password: string(pass),
 	}); err != nil {
-		da.logger.Err(err).Str("Email", email).Msg("Unable to create user account.")
+		da.logger.Err(err).Str("Email", email).Msg("unable to create user account.")
 		return err
 	}
 
-	da.logger.Info().Str("Email", email).Msg("Successfully created user account.")
+	da.logger.Info().Str("Email", email).Msg("successfully created user account.")
 
 	return nil
 }
