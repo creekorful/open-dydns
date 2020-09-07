@@ -96,9 +96,9 @@ Below is an example of the configuration file using OVH provider:
   Driver = "sqlite"
 ```
 
-## opendydns-cli
+## opendydnsctl
 
-OpenDyDNS-CLI is a CLI used to dial with the daemon. It uses the REST API.
+opendydnsctl is a CLI used to dial with the daemon. It uses the REST API.
 
 Each time the CLI is installed on a computer, a new access token must be registered using the login command.
 
@@ -108,45 +108,45 @@ This command will prompt for the user password and then tries to authenticate it
 on the system.
 
 ```
-$ opendydns-cli login <email>
+$ opendydnsctl login <email>
 ```
 
 This command will list the available resources.
 Possible resources: domain or alias. Default is alias.
 
 ```
-$ opendydns-cli ls <what>
+$ opendydnsctl ls <what>
 ```
 
 This command will register given alias if possible and associated with current computer.
 This will also enable the alias for given computer and synchronize the IP.
 
 ```
-$ opendydns-cli register <alias>
+$ opendydnsctl register <alias>
 ```
 
 This command will delete given alias (will be available for others to register).
 
 ```
-$ opendydns-cli rm <alias>
+$ opendydnsctl rm <alias>
 ```
 
 Enable IP synchronization for this alias.
 Please note that by default synchronization is disable, to prevent any service disruption when adding a new computer.
 
 ```
-$ opendydns-cli set-synchronize <alias> <true/false>
+$ opendydnsctl set-synchronize <alias> <true/false>
 ```
 
 Override the IP value for given alias. This works with both IPv4 and Ipv6.
 
 ```
-$ opendydns-cli set-ip <alias> <ip>
+$ opendydnsctl set-ip <alias> <ip>
 ```
 
 This command will synchronize the current IP with linked / active aliases.
 This is generally run by a Cron job.
 
 ```
-$ opendydns-cli sync
+$ opendydnsctl sync
 ```
