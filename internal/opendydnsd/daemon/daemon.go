@@ -37,7 +37,7 @@ type daemon struct {
 // NewDaemon return a new Daemon instance with given configuration
 func NewDaemon(c config.Config, logger *zerolog.Logger) (Daemon, error) {
 	logger.Debug().Msg("connecting to the database.")
-	conn, err := database.OpenConnection(c.DatabaseConfig)
+	conn, err := database.OpenConnection(c.DatabaseConfig, logger)
 	if err != nil {
 		return nil, err
 	}

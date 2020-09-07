@@ -2,21 +2,28 @@ package database
 
 import (
 	"context"
+	"github.com/rs/zerolog"
 	"gorm.io/gorm/logger"
 	"time"
 )
 
-type nopLogger struct {
+type zeroLogger struct {
+	logger *zerolog.Logger
 }
 
-func (np *nopLogger) LogMode(logger.LogLevel) logger.Interface {
-	return np
+func (zl *zeroLogger) LogMode(logger.LogLevel) logger.Interface {
+	return zl
 }
-func (np *nopLogger) Info(context.Context, string, ...interface{}) {
+func (zl *zeroLogger) Info(_ context.Context, msg string, data ...interface{}) {
+	zl.logger.Trace().Msgf(msg, data...)
 }
-func (np *nopLogger) Warn(context.Context, string, ...interface{}) {
+func (zl *zeroLogger) Warn(_ context.Context, msg string, data ...interface{}) {
+	zl.logger.Trace().Msgf(msg, data...)
 }
-func (np *nopLogger) Error(context.Context, string, ...interface{}) {
+func (zl *zeroLogger) Error(_ context.Context, msg string, data ...interface{}) {
+	zl.logger.Error().Msgf(msg, data...)
 }
-func (np *nopLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+func (zl *zeroLogger) Trace(_ context.Context, _ time.Time, fc func() (string, int64), err error) {
+	res, rows := fc()
+	zl.logger.Trace().Int64("RowsAffected", rows).Msg(res)
 }

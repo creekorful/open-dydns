@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
+	"github.com/rs/zerolog"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -46,14 +47,14 @@ type connection struct {
 }
 
 // OpenConnection tries to open a new database connection using given config
-func OpenConnection(conf config.DatabaseConfig) (Connection, error) {
+func OpenConnection(conf config.DatabaseConfig, logger *zerolog.Logger) (Connection, error) {
 	driver, err := getDriver(conf)
 	if err != nil {
 		return nil, err
 	}
 
 	conn, err := gorm.Open(driver, &gorm.Config{
-		Logger: &nopLogger{},
+		Logger: &zeroLogger{logger: logger},
 	})
 	if err != nil {
 		return nil, err
