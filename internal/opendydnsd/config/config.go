@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/common"
+	"time"
 )
 
 // DefaultConfig is the OpenDyDNSD default configuration
@@ -37,6 +38,7 @@ type APIConfig struct {
 	CertCacheDir string
 	Hostname     string
 	AutoTLS      bool
+	TokenTTL     time.Duration
 }
 
 // Valid determinate if config is valid one

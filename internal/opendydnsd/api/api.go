@@ -15,9 +15,8 @@ import (
 
 // API represent the Daemon REST API
 type API struct {
-	e          *echo.Echo
-	signingKey []byte
-	conf       config.APIConfig
+	e    *echo.Echo
+	conf config.APIConfig
 }
 
 // NewAPI return a new API instance, wrapped around given Daemon instance
@@ -36,16 +35,15 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 
 	// Create the API
 	a := API{
-		e:          e,
-		signingKey: []byte(conf.SigningKey),
-		conf:       conf,
+		e:    e,
+		conf: conf,
 	}
 
 	// Register global middlewares
 	e.Use(newZeroLogMiddleware(d.Logger()))
 
 	// Register per-route middlewares
-	authMiddleware := getAuthMiddleware(a.signingKey)
+	authMiddleware := getAuthMiddleware(a.conf.SigningKey)
 
 	// Register endpoints
 	e.POST("/sessions", a.authenticate(d))
@@ -71,7 +69,7 @@ func (a *API) authenticate(d daemon.Daemon) echo.HandlerFunc {
 		}
 
 		// Create the JWT token
-		token, err := makeToken(userCtx, a.signingKey)
+		token, err := makeToken(userCtx, a.conf.SigningKey, a.conf.TokenTTL)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
