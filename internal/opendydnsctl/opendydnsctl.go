@@ -29,7 +29,7 @@ func (odc *CLIApp) App() *cli.App {
 		Name:    "opendydnsctl",
 		Usage:   "The OpenDyDNS CLI",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
-		Version: "0.2.0",
+		Version: "0.3.0",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "config",

@@ -26,7 +26,7 @@ type API struct {
 func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	// Configure echo
 	e := echo.New()
-	e.Logger.SetOutput(ioutil.Discard) // todo use zerolog
+	e.Logger.SetOutput(ioutil.Discard)
 
 	// Determinate if should run HTTPS
 	if conf.SSLEnabled() {

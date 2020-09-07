@@ -31,7 +31,7 @@ func (da *DaemonApp) GetApp() *cli.App {
 		Name:    "opendydnsd",
 		Usage:   "The OpenDyDNS(Daemon)",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
-		Version: "0.2.0",
+		Version: "0.3.0",
 		Before:  da.before,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
