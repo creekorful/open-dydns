@@ -4,7 +4,8 @@ import (
 	"errors"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
-	"github.com/creekorful/open-dydns/internal/opendydnsd/dns"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/database_mock"
+	"github.com/creekorful/open-dydns/internal/opendydnsd/dns_mock"
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
@@ -120,7 +121,7 @@ func TestDaemon_CreateUser_InvalidRequest(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -137,7 +138,7 @@ func TestDaemon_CreateUser_EmailTaken(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -156,7 +157,7 @@ func TestDaemon_CreateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -195,7 +196,7 @@ func TestDaemon_Authenticate_NonExistingUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -217,7 +218,7 @@ func TestDaemon_Authenticate_InvalidPassword(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -244,7 +245,7 @@ func TestDaemon_Authenticate(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -280,7 +281,7 @@ func TestDaemon_GetAliases(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -311,7 +312,7 @@ func TestDaemon_RegisterAlias_InvalidRequest(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -334,8 +335,8 @@ func TestDaemon_RegisterAlias_AliasTaken(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
-	providerMock := dns.NewMockProvider(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
+	providerMock := dns_mock.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger:      &logger,
@@ -374,8 +375,8 @@ func TestDaemon_RegisterAlias_AliasAlreadyExist(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
-	providerMock := dns.NewMockProvider(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
+	providerMock := dns_mock.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger:      &logger,
@@ -414,9 +415,9 @@ func TestDaemon_RegisterAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
-	provisionerMock := dns.NewMockProvisioner(mockCtrl)
-	providerMock := dns.NewMockProvider(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
+	provisionerMock := dns_mock.NewMockProvisioner(mockCtrl)
+	providerMock := dns_mock.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -468,7 +469,7 @@ func TestDaemon_UpdateAlias_InvalidAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -486,7 +487,7 @@ func TestDaemon_UpdateAlias_AliasDoesNotExist(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -508,7 +509,7 @@ func TestDaemon_UpdateAlias_AliasNotOwned(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -532,9 +533,9 @@ func TestDaemon_UpdateAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
-	provisionerMock := dns.NewMockProvisioner(mockCtrl)
-	providerMock := dns.NewMockProvider(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
+	provisionerMock := dns_mock.NewMockProvisioner(mockCtrl)
+	providerMock := dns_mock.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger: &logger,
@@ -593,9 +594,9 @@ func TestDaemon_DeleteAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	logger := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	dbMock := database.NewMockConnection(mockCtrl)
-	provisionerMock := dns.NewMockProvisioner(mockCtrl)
-	providerMock := dns.NewMockProvider(mockCtrl)
+	dbMock := database_mock.NewMockConnection(mockCtrl)
+	provisionerMock := dns_mock.NewMockProvisioner(mockCtrl)
+	providerMock := dns_mock.NewMockProvider(mockCtrl)
 
 	d := daemon{
 		logger: &logger,

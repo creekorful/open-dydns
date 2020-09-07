@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+//go:generate mockgen -source daemon.go -destination=../daemon_mock/daemon_mock.go -package=daemon_mock
+
 // Daemon represent OpenDyDNSD
 type Daemon interface {
 	CreateUser(cred proto.CredentialsDto) (proto.UserContext, error)

@@ -2,7 +2,7 @@ package proto
 
 import "github.com/labstack/echo/v4"
 
-//go:generate mockgen -source contract.go -destination=./contract_mock.go -package=proto
+//go:generate mockgen -source contract.go -destination=../proto_mock/contract_mock.go -package=proto_mock
 
 // ErrAliasTaken is returned when the wanted alias is already taken by someone else
 var ErrAliasTaken = echo.NewHTTPError(409, "alias already taken")

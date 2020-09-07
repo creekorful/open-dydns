@@ -2,7 +2,9 @@ package cli
 
 import (
 	"github.com/creekorful/open-dydns/internal/opendydnsctl/config"
+	"github.com/creekorful/open-dydns/internal/opendydnsctl/config_mock"
 	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/creekorful/open-dydns/pkg/proto_mock"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -38,8 +40,8 @@ func TestCli_Authenticate(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
-	configMock := config.NewMockProvider(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
+	configMock := config_mock.NewMockProvider(mockCtrl)
 
 	c := cli{
 		logger:       &l,
@@ -67,7 +69,7 @@ func TestCli_GetAliases(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -117,7 +119,7 @@ func TestCli_RegisterAlias_AliasTaken(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -140,7 +142,7 @@ func TestCli_RegisterAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -178,7 +180,7 @@ func TestCli_UpdateAlias_AliasNotFound(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -201,7 +203,7 @@ func TestCli_UpdateAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -228,7 +230,7 @@ func TestCli_DeleteAlias_AliasNotFound(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -250,7 +252,7 @@ func TestCli_DeleteAlias(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -272,7 +274,7 @@ func TestCli_GetDomains(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -299,7 +301,7 @@ func TestCli_Synchronize(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	clientMock := proto.NewMockAPIContract(mockCtrl)
+	clientMock := proto_mock.NewMockAPIContract(mockCtrl)
 
 	c := cli{
 		logger:    &l,
@@ -335,23 +337,16 @@ func TestCli_SetSynchronize(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	l := log.Output(ioutil.Discard).Level(zerolog.Disabled)
-	confProvider := config.NewMockProvider(mockCtrl)
+	confProvider := config_mock.NewMockProvider(mockCtrl)
 
 	c := cli{
 		logger:       &l,
 		confProvider: confProvider,
-		conf: config.Config{
-			Aliases: map[string]config.AliasConfig{
-				"foo.bar.baz":     {Synchronize: false},
-				"foo.example.org": {Synchronize: true},
-			},
-		},
 	}
 
 	confProvider.EXPECT().Save(config.Config{
 		Aliases: map[string]config.AliasConfig{
-			"foo.bar.baz":     {Synchronize: true},
-			"foo.example.org": {Synchronize: true},
+			"foo.bar.baz": {Synchronize: true},
 		},
 	})
 
@@ -361,6 +356,21 @@ func TestCli_SetSynchronize(t *testing.T) {
 
 	if !c.conf.Aliases["foo.bar.baz"].Synchronize {
 		t.Error("alias foo.bar.baz is not updated")
+	}
+
+	confProvider.EXPECT().Save(config.Config{
+		Aliases: map[string]config.AliasConfig{
+			"foo.bar.baz":     {Synchronize: true},
+			"foo.example.org": {Synchronize: true},
+		},
+	})
+
+	if err := c.SetSynchronize("foo.example.org", true); err != nil {
+		t.Error(err)
+	}
+
+	if !c.conf.Aliases["foo.example.org"].Synchronize {
+		t.Error("alias foo.example.org is not updated")
 	}
 
 	confProvider.EXPECT().Save(config.Config{

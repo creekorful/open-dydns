@@ -5,7 +5,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/common"
 )
 
-//go:generate mockgen -source config.go -destination=./config_mock.go -package=config
+//go:generate mockgen -source config.go -destination=../config_mock/config_mock.go -package=config_mock
 
 // DefaultConfig is the OpenDyDNS-CLI default configuration
 var DefaultConfig = Config{

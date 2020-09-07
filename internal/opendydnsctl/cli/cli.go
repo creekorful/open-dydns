@@ -153,6 +153,7 @@ func (c *cli) SetSynchronize(aliasName string, status bool) error {
 	aliasConfig.Synchronize = status
 	conf.Aliases[aliasName] = aliasConfig
 
+	c.conf = conf
 	if err := c.saveConfig(); err != nil {
 		return err
 	}
