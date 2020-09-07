@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/creekorful/open-dydns/internal/opendydnscli/config"
+	"github.com/creekorful/open-dydns/internal/opendydnsctl/config"
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"

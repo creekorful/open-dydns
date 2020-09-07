@@ -1,10 +1,10 @@
-package opendydnscli
+package opendydnsctl
 
 import (
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/common"
-	cli2 "github.com/creekorful/open-dydns/internal/opendydnscli/cli"
-	"github.com/creekorful/open-dydns/internal/opendydnscli/config"
+	cli2 "github.com/creekorful/open-dydns/internal/opendydnsctl/cli"
+	"github.com/creekorful/open-dydns/internal/opendydnsctl/config"
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog"
@@ -14,7 +14,7 @@ import (
 	"strconv"
 )
 
-// CLIApp represent the opendydns-cli running context
+// CLIApp represent the opendydnsctl running context
 type CLIApp struct {
 }
 
@@ -26,14 +26,14 @@ func NewCLIApp() *CLIApp {
 // App return the cli.App to execute
 func (odc *CLIApp) App() *cli.App {
 	app := &cli.App{
-		Name:    "opendydns-cli",
+		Name:    "opendydnsctl",
 		Usage:   "The OpenDyDNS CLI",
 		Authors: []*cli.Author{{Name: "Aloïs Micard", Email: "alois@micard.lu"}},
 		Version: "0.2.0",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "config",
-				Value: "opendydns-cli.toml",
+				Value: "opendydnsctl.toml",
 			},
 		},
 		Commands: []*cli.Command{

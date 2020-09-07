@@ -11,9 +11,9 @@ builds:
       - linux
     goarch:
       - amd64
-  - id: opendydnsd-cli
-    main: ./cmd/opendydns-cli/opendydns-cli.go
-    binary: opendydns-cli
+  - id: opendydnsctl
+    main: ./cmd/opendydnsctl/opendydnsctl.go
+    binary: opendydnsctl
     env:
       - CGO_ENABLED=0
     goos:
