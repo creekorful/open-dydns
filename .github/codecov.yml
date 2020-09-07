@@ -1,0 +1,6 @@
+coverage:
+  status:
+    status:
+      project: yes
+      patch: no
+      changes: no
