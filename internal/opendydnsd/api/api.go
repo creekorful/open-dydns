@@ -7,6 +7,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
 	"github.com/creekorful/open-dydns/pkg/proto"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 	"golang.org/x/crypto/acme/autocert"
 	"io/ioutil"
 	"net/http"
@@ -15,8 +16,9 @@ import (
 
 // API represent the Daemon REST API
 type API struct {
-	e    *echo.Echo
-	conf config.APIConfig
+	e      *echo.Echo
+	conf   config.APIConfig
+	logger *zerolog.Logger
 }
 
 // NewAPI return a new API instance, wrapped around given Daemon instance
@@ -24,8 +26,7 @@ type API struct {
 func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 	// Configure echo
 	e := echo.New()
-	e.HideBanner = false
-	e.Logger.SetOutput(ioutil.Discard)
+	e.Logger.SetOutput(ioutil.Discard) // todo use zerolog
 
 	// Determinate if should run HTTPS
 	if conf.SSLEnabled() {
@@ -35,8 +36,9 @@ func NewAPI(d daemon.Daemon, conf config.APIConfig) (*API, error) {
 
 	// Create the API
 	a := API{
-		e:    e,
-		conf: conf,
+		e:      e,
+		conf:   conf,
+		logger: d.Logger(),
 	}
 
 	// Register global middlewares
@@ -158,14 +160,14 @@ func (a *API) getDomains(d daemon.Daemon) echo.HandlerFunc {
 func (a *API) Start(address string) error {
 	// determinate if should run HTTPS
 	if a.conf.SSLEnabled() {
+		a.logger.Debug().Msg("SSL support enabled.")
 		if a.conf.AutoTLS {
 			return a.startAutoTLS(address)
 		}
 
-		// TODO configure file
 		return a.e.StartTLS(address,
 			fmt.Sprintf("%s/%s", a.conf.CertCacheDir, a.conf.Hostname),
-			fmt.Sprintf("%s/acme_account+key", a.conf.CertCacheDir))
+			fmt.Sprintf("%s/%s", a.conf.CertCacheDir, a.conf.Hostname))
 	}
 
 	return a.e.Start(address)
@@ -173,10 +175,12 @@ func (a *API) Start(address string) error {
 
 // Shutdown terminate the API server cleanly
 func (a *API) Shutdown(ctx context.Context) error {
+	a.logger.Debug().Msg("shutting down API.")
 	return a.e.Shutdown(ctx)
 }
 
 func (a *API) startAutoTLS(address string) error {
+	a.logger.Debug().Msg("starting API using auto TLS support.")
 	// since we are using LetsEncrypt we can only use port 443
 	parts := strings.Split(address, ":")
 	if len(parts) == 2 {
