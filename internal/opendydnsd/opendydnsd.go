@@ -6,7 +6,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/opendydnsd/api"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/daemon"
-	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/creekorful/open-dydns/proto"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/crypto/ssh/terminal"

@@ -5,7 +5,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/common"
 	cli2 "github.com/creekorful/open-dydns/internal/opendydnsctl/cli"
 	"github.com/creekorful/open-dydns/internal/opendydnsctl/config"
-	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/creekorful/open-dydns/proto"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"

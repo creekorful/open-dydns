@@ -3,8 +3,8 @@ package cli
 import (
 	"github.com/creekorful/open-dydns/internal/opendydnsctl/config"
 	"github.com/creekorful/open-dydns/internal/opendydnsctl/config_mock"
-	"github.com/creekorful/open-dydns/pkg/proto"
-	"github.com/creekorful/open-dydns/pkg/proto_mock"
+	"github.com/creekorful/open-dydns/proto"
+	"github.com/creekorful/open-dydns/proto_mock"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

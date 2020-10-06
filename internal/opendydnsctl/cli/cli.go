@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/creekorful/open-dydns/internal/opendydnsctl/client"
 	"github.com/creekorful/open-dydns/internal/opendydnsctl/config"
-	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/creekorful/open-dydns/proto"
 	"github.com/rs/zerolog"
 )
 

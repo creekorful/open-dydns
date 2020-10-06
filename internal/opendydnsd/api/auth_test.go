@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/creekorful/open-dydns/proto"
 	"strings"
 	"testing"
 	"time"

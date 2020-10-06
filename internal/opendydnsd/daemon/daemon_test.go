@@ -6,7 +6,7 @@ import (
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/database_mock"
 	"github.com/creekorful/open-dydns/internal/opendydnsd/dns_mock"
-	"github.com/creekorful/open-dydns/pkg/proto"
+	"github.com/creekorful/open-dydns/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
